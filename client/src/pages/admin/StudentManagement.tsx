@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { GraduationCap, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '@/services/api'
@@ -35,6 +35,7 @@ type Suggestion = {
 }
 
 export default function StudentManagement() {
+  const queryClient = useQueryClient()
   const [sortBy, setSortBy] = useState<'course' | 'sports' | 'career' | 'approval'>('course')
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -61,13 +62,33 @@ export default function StudentManagement() {
   const approvalMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'APPROVED' | 'REJECTED' }) =>
       api.patch(`/users/students/${id}/approval`, { status }),
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey: ['students'] })
+      const key = ['students', sortBy] as const
+      const previous = queryClient.getQueryData<Student[]>(key) || []
+
+      queryClient.setQueryData<Student[]>(key, (current = []) =>
+        current.map((student) =>
+          student.id === id ? { ...student, approvalStatus: status } : student
+        )
+      )
+
+      return { previous, key }
+    },
     onSuccess: async () => {
       toast.success('Student status updated')
-      await studentsQuery.refetch()
-      await suggestionsQuery.refetch()
+      await queryClient.invalidateQueries({ queryKey: ['students'] })
+      await queryClient.invalidateQueries({ queryKey: ['roommate-suggestions'] })
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Could not update student')
+    onError: (error: any, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(context.key, context.previous)
+      }
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        'Could not update student'
+      toast.error(msg)
     },
   })
 
