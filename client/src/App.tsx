@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
@@ -32,11 +32,7 @@ function ProtectedRoute({
   children: React.ReactNode
   roles?: string[]
 }) {
-  const { isAuthenticated, isHydrated, user } = useAuthStore()
-
-  if (!isHydrated) {
-    return <LoadingSpinner fullScreen />
-  }
+  const { isAuthenticated, user } = useAuthStore()
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (roles && user && !roles.includes(user.role)) {
@@ -46,8 +42,40 @@ function ProtectedRoute({
   return <>{children}</>
 }
 
+function useAuthHydrationReady() {
+  const [ready, setReady] = useState(() =>
+    useAuthStore.persist.hasHydrated()
+  )
+
+  useEffect(() => {
+    const unsubHydrate = useAuthStore.persist.onHydrate(() => setReady(false))
+    const unsubFinish = useAuthStore.persist.onFinishHydration(() =>
+      setReady(true)
+    )
+
+    setReady(useAuthStore.persist.hasHydrated())
+
+    const timer = window.setTimeout(() => {
+      setReady(true)
+    }, 2500)
+
+    return () => {
+      window.clearTimeout(timer)
+      unsubHydrate()
+      unsubFinish()
+    }
+  }, [])
+
+  return ready
+}
+
 export default function App() {
   const { user } = useAuthStore()
+  const authHydrationReady = useAuthHydrationReady()
+
+  if (!authHydrationReady) {
+    return <LoadingSpinner fullScreen />
+  }
 
   return (
     <ErrorBoundary>

@@ -7,7 +7,6 @@ interface AuthStore {
   user: User | null
   accessToken: string | null
   isAuthenticated: boolean
-  isHydrated: boolean
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   setUser: (user: User) => void
@@ -22,7 +21,6 @@ export const useAuthStore = create<AuthStore>()(
           ? window.localStorage.getItem('accessToken')
           : null,
       isAuthenticated: false,
-      isHydrated: false,
 
       login: async (email, password) => {
         const res = await api.post('/auth/login', { email, password })
@@ -48,9 +46,6 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'auth-store',
-      onRehydrateStorage: () => () => {
-        useAuthStore.setState({ isHydrated: true })
-      },
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
