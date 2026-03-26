@@ -1,0 +1,195 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  
+}
+
+enum Role {
+  STUDENT
+  WARDEN
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RoomStatus {
+  AVAILABLE
+  OCCUPIED
+  MAINTENANCE
+  RESERVED
+}
+
+enum ComplaintStatus {
+  PENDING
+  UNDER_REVIEW
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+}
+
+enum ComplaintCategory {
+  PLUMBING
+  ELECTRICAL
+  CLEANING
+  FURNITURE
+  SECURITY
+  FOOD
+  INTERNET
+  OTHER
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id              String         @id @default(uuid())
+  name            String
+  email           String         @unique
+  password        String
+  role            Role           @default(STUDENT)
+  phone           String?
+  avatarUrl       String?
+  enrollmentNo    String?        @unique
+  course          String?
+  gender          Gender?
+  sportsInterests String[]
+  careerGoal      String?
+  address         String?
+  parentContactNo String?
+  approvalStatus  ApprovalStatus @default(PENDING)
+  approvedAt      DateTime?
+  approvedBy      String?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  allocation      RoomAllocation?
+  complaints      Complaint[]
+  notifications   Notification[]
+
+  @@map("users")
+}
+
+model Room {
+  id          String           @id @default(uuid())
+  number      String           @unique
+  floor       Int
+  block       String
+  capacity    Int              @default(2)
+  status      RoomStatus       @default(AVAILABLE)
+  amenities   String[]
+  createdAt   DateTime         @default(now())
+  allocations RoomAllocation[]
+
+  @@map("rooms")
+}
+
+model RoomAllocation {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  roomId      String
+  allocatedAt DateTime  @default(now())
+  vacatedAt   DateTime?
+  isActive    Boolean   @default(true)
+  user        User      @relation(fields: [userId], references: [id])
+  room        Room      @relation(fields: [roomId], references: [id])
+
+  @@map("room_allocations")
+}
+
+model Complaint {
+  id          String             @id @default(uuid())
+  token       String             @unique @default(cuid())
+  isAnonymous Boolean            @default(false)
+  userId      String?
+  category    ComplaintCategory
+  title       String
+  description String
+  imageUrl    String?
+  status      ComplaintStatus    @default(PENDING)
+  adminNote   String?
+  resolvedAt  DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User?              @relation(fields: [userId], references: [id])
+  identity    ComplaintIdentity?
+
+  @@map("complaints")
+}
+
+model ComplaintIdentity {
+  id          String    @id @default(uuid())
+  complaintId String    @unique
+  studentHash String
+  createdAt   DateTime  @default(now())
+  complaint   Complaint @relation(fields: [complaintId], references: [id])
+
+  @@map("complaint_identities")
+}
+
+model MaintenanceTask {
+  id          String            @id @default(uuid())
+  title       String
+  description String
+  location    String
+  assignedTo  String?
+  status      MaintenanceStatus @default(SCHEDULED)
+  scheduledAt DateTime
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@map("maintenance_tasks")
+}
+
+model Announcement {
+  id        String    @id @default(uuid())
+  title     String
+  content   String
+  isUrgent  Boolean   @default(false)
+  createdBy String
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("announcements")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   @default("info")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model KnowledgeBase {
+  id        String   @id @default(uuid())
+  content   String
+  embedding String?
+  metadata  Json
+  createdAt DateTime @default(now())
+
+  @@map("knowledge_base")
+}
