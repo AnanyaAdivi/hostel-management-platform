@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
@@ -32,11 +32,62 @@ function ProtectedRoute({
   children: React.ReactNode
   roles?: string[]
 }) {
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, isHydrated, isBootstrapping, user } = useAuthStore()
+
+  if (!isHydrated || isBootstrapping) {
+    return <LoadingSpinner fullScreen />
+  }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (roles && user && !roles.includes(user.role)) {
     return <Navigate to="/dashboard" replace />
+  }
+
+  return <>{children}</>
+}
+
+function SessionBootstrap({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isHydrated, refreshSession } = useAuthStore()
+  const [checked, setChecked] = useState(false)
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return
+    }
+
+    let active = true
+
+    const delay = (ms: number) =>
+      new Promise((resolve) => window.setTimeout(resolve, ms))
+
+    const bootstrap = async () => {
+      if (!isAuthenticated) {
+        if (active) setChecked(true)
+        return
+      }
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          await refreshSession()
+          break
+        } catch {
+          if (attempt === 2) break
+          await delay(1200 * (attempt + 1))
+        }
+      }
+
+      if (active) setChecked(true)
+    }
+
+    void bootstrap()
+
+    return () => {
+      active = false
+    }
+  }, [isAuthenticated, isHydrated, refreshSession])
+
+  if (!isHydrated || (isAuthenticated && !checked)) {
+    return <LoadingSpinner fullScreen />
   }
 
   return <>{children}</>
@@ -48,80 +99,82 @@ export default function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <OfflineBanner />
-          <Suspense fallback={<LoadingSpinner fullScreen />}>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/track" element={<TrackComplaintPage />} />
+        <SessionBootstrap>
+          <BrowserRouter>
+            <OfflineBanner />
+            <Suspense fallback={<LoadingSpinner fullScreen />}>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/track" element={<TrackComplaintPage />} />
 
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout />
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route
-                  path="dashboard"
+                  path="/"
                   element={
-                    user?.role === 'ADMIN' ? (
-                      <AdminDashboard />
-                    ) : user?.role === 'WARDEN' ? (
-                      <WardenDashboard />
-                    ) : (
-                      <StudentDashboard />
-                    )
-                  }
-                />
-                <Route
-                  path="rooms"
-                  element={
-                    <ProtectedRoute roles={['ADMIN', 'WARDEN']}>
-                      <RoomManagement />
+                    <ProtectedRoute>
+                      <AppLayout />
                     </ProtectedRoute>
                   }
-                />
-                <Route
-                  path="my-room"
-                  element={
-                    <ProtectedRoute roles={['STUDENT']}>
-                      <MyRoomPage />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="complaints" element={<ComplaintsPage />} />
-                <Route
-                  path="complaints/anonymous"
-                  element={<AnonymousComplaintPage />}
-                />
-                <Route
-                  path="admin/complaints"
-                  element={
-                    <ProtectedRoute roles={['ADMIN', 'WARDEN']}>
-                      <ComplaintsAdmin />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="maintenance" element={<MaintenanceAdmin />} />
-                <Route
-                  path="students"
-                  element={
-                    <ProtectedRoute roles={['ADMIN', 'WARDEN']}>
-                      <StudentManagement />
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
+                >
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route
+                    path="dashboard"
+                    element={
+                      user?.role === 'ADMIN' ? (
+                        <AdminDashboard />
+                      ) : user?.role === 'WARDEN' ? (
+                        <WardenDashboard />
+                      ) : (
+                        <StudentDashboard />
+                      )
+                    }
+                  />
+                  <Route
+                    path="rooms"
+                    element={
+                      <ProtectedRoute roles={['ADMIN', 'WARDEN']}>
+                        <RoomManagement />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="my-room"
+                    element={
+                      <ProtectedRoute roles={['STUDENT']}>
+                        <MyRoomPage />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="complaints" element={<ComplaintsPage />} />
+                  <Route
+                    path="complaints/anonymous"
+                    element={<AnonymousComplaintPage />}
+                  />
+                  <Route
+                    path="admin/complaints"
+                    element={
+                      <ProtectedRoute roles={['ADMIN', 'WARDEN']}>
+                        <ComplaintsAdmin />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="maintenance" element={<MaintenanceAdmin />} />
+                  <Route
+                    path="students"
+                    element={
+                      <ProtectedRoute roles={['ADMIN', 'WARDEN']}>
+                        <StudentManagement />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Route>
 
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Suspense>
-          <Toaster position="top-right" />
-        </BrowserRouter>
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </Suspense>
+            <Toaster position="top-right" />
+          </BrowserRouter>
+        </SessionBootstrap>
       </QueryClientProvider>
     </ErrorBoundary>
   )
