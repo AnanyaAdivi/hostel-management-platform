@@ -73,7 +73,7 @@ hostel-platform/
 - JWT auth
 - Socket.IO
 - Cloudinary
-- Claude API via `@anthropic-ai/sdk`
+- LLM
 
 ## Roles
 
