@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import { AlertCircle, BedDouble, Clock3, Wifi } from 'lucide-react'
 import api from '@/services/api'
 import AnnouncementsPanel from '@/components/announcements/AnnouncementsPanel'
@@ -9,8 +10,6 @@ import LoadingSpinner from '@/components/shared/LoadingSpinner'
 import EmptyState from '@/components/shared/EmptyState'
 import StatsGridSkeleton from '@/components/shared/StatsGridSkeleton'
 import type { Complaint } from '@/types'
-import { useMutation } from '@tanstack/react-query'
-import toast from 'react-hot-toast'
 
 type RoomApiItem = {
   id: string
@@ -35,10 +34,28 @@ export default function StudentDashboard() {
   const cleaningQuery = useQuery({
     queryKey: ['cleaning-upcoming'],
     queryFn: () => api.get('/cleaning/my/upcoming').then((res) => res.data as any),
+    retry: false,
   })
 
   const myRoom = useMemo(() => myRoomQuery.data || undefined, [myRoomQuery.data])
+  const complaints = complaintsQuery.data || []
   const cleaning = cleaningQuery.data
+
+  const feedbackMutation = useMutation({
+    mutationFn: (payload: {
+      assignmentId: string
+      cleaned: boolean
+      rating: number
+      comment?: string
+    }) => api.post('/cleaning/feedback', payload),
+    onSuccess: () => {
+      toast.success('Thanks for the feedback')
+      cleaningQuery.refetch()
+      complaintsQuery.refetch()
+    },
+    onError: (e: any) =>
+      toast.error(e?.response?.data?.message || 'Failed to submit feedback'),
+  })
 
   if (complaintsQuery.isLoading || myRoomQuery.isLoading) {
     return (
@@ -48,19 +65,6 @@ export default function StudentDashboard() {
       </div>
     )
   }
-
-  const complaints = complaintsQuery.data || []
-
-  const feedbackMutation = useMutation({
-    mutationFn: (payload: { assignmentId: string; cleaned: boolean; rating: number; comment?: string }) =>
-      api.post('/cleaning/feedback', payload),
-    onSuccess: () => {
-      toast.success('Thanks for the feedback')
-      cleaningQuery.refetch()
-      complaintsQuery.refetch()
-    },
-    onError: (e: any) => toast.error(e?.response?.data?.message || 'Failed to submit feedback'),
-  })
 
   return (
     <div style={{ display: 'grid', gap: 24 }}>
@@ -127,15 +131,7 @@ export default function StudentDashboard() {
                     })
                   }
                   disabled={feedbackMutation.isPending}
-                  style={{
-                    padding: '8px 10px',
-                    borderRadius: 10,
-                    border: '1px solid var(--border-default)',
-                    background: 'var(--bg-tertiary)',
-                    color: 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
+                  style={pillButtonStyle}
                 >
                   {rating}/5
                 </button>
@@ -150,15 +146,7 @@ export default function StudentDashboard() {
                   })
                 }
                 disabled={feedbackMutation.isPending}
-                style={{
-                  padding: '8px 10px',
-                  borderRadius: 10,
-                  border: 'none',
-                  background: 'rgba(239,68,68,0.18)',
-                  color: 'var(--accent-danger)',
-                  cursor: 'pointer',
-                  fontWeight: 700,
-                }}
+                style={dangerPillStyle}
               >
                 Not cleaned
               </button>
@@ -168,26 +156,23 @@ export default function StudentDashboard() {
           <div className="card">
             <h3 style={{ fontFamily: 'Sora', fontSize: 16, marginBottom: 10 }}>Next room cleaning</h3>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-              {new Date(cleaning.upcoming.scheduledStart).toLocaleString([], {
-                weekday: 'short',
-                month: 'short',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}{' '}
-              â€“{' '}
-              {new Date(cleaning.upcoming.scheduledEnd).toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatCleaningWindow(cleaning.upcoming.scheduledStart, cleaning.upcoming.scheduledEnd) ||
+                'Scheduled window unavailable'}
             </div>
             <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-tertiary)' }}>
               Staff: <b>{cleaning.upcoming.staff.name}</b>
               {cleaning.upcoming.staff.phone ? ` (${cleaning.upcoming.staff.phone})` : ''}{' '}
-              {cleaning.upcoming.staff.zone ? `â· ${cleaning.upcoming.staff.zone}` : ''}
+              {cleaning.upcoming.staff.zone ? `· ${cleaning.upcoming.staff.zone}` : ''}
             </div>
             <div style={{ marginTop: 10, fontSize: 12, color: 'var(--text-secondary)' }}>
               Please keep the room accessible during the scheduled window.
+            </div>
+          </div>
+        ) : cleaningQuery.isError ? (
+          <div className="card">
+            <h3 style={{ fontFamily: 'Sora', fontSize: 16, marginBottom: 10 }}>Room cleaning</h3>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+              Cleaning schedule is unavailable right now.
             </div>
           </div>
         ) : null}
@@ -204,9 +189,7 @@ export default function StudentDashboard() {
                 border: '1px solid var(--border-default)',
               }}
             >
-              <div style={{ fontFamily: 'Sora', fontSize: 32, marginBottom: 4 }}>
-                {myRoom.number}
-              </div>
+              <div style={{ fontFamily: 'Sora', fontSize: 32, marginBottom: 4 }}>{myRoom.number}</div>
               <div style={{ color: 'var(--text-secondary)', marginBottom: 18 }}>
                 Block {myRoom.block} · Floor {myRoom.floor}
               </div>
@@ -252,3 +235,43 @@ export default function StudentDashboard() {
     </div>
   )
 }
+
+function formatCleaningWindow(startRaw: unknown, endRaw: unknown) {
+  try {
+    const start = new Date(startRaw as any)
+    const end = new Date(endRaw as any)
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null
+
+    const date = start.toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: '2-digit',
+    })
+    const st = start.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    const et = end.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    return `${date}, ${st} – ${et}`
+  } catch {
+    return null
+  }
+}
+
+const pillButtonStyle: React.CSSProperties = {
+  padding: '8px 10px',
+  borderRadius: 10,
+  border: '1px solid var(--border-default)',
+  background: 'var(--bg-tertiary)',
+  color: 'var(--text-secondary)',
+  cursor: 'pointer',
+  fontWeight: 600,
+}
+
+const dangerPillStyle: React.CSSProperties = {
+  padding: '8px 10px',
+  borderRadius: 10,
+  border: 'none',
+  background: 'rgba(239,68,68,0.18)',
+  color: 'var(--accent-danger)',
+  cursor: 'pointer',
+  fontWeight: 700,
+}
+
