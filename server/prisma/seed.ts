@@ -175,8 +175,65 @@ async function main() {
     },
     {
       content:
+        'Hostel administrative and support contacts:\n' +
+        '- Dr. Bijoy Chand Chatterjee — Warden (Boys Hostel): bijoycc@sau.int, +91 8383888914\n' +
+        '- Dr. Rinkoo Devi Gupta — Warden (Girls Hostel): rdgupta@sau.ac.in\n' +
+        '- Kajori Bhatnagar — Warden Incharge (Girls Hostel): kajori.bhatnagar@sau.int\n' +
+        '- Vineet Ghildyal — Deputy Director (Student Services): vineet@sau.int\n' +
+        '- Arvind Singh Negi — Office Assistant (Boys Hostel): +91 9560880253\n' +
+        '- Anupma Arora — Office Assistant (Girls Hostel): +91 9971567894\n' +
+        '- Sushil Kumar — Mess Manager: +91 7398034344\n' +
+        '- Uttam Kumar — Hostel Buildings Caretaker: +91 8130240061\n' +
+        '- Bishan Nath — Civil & Electrical Maintenance: +91 9953934396\n' +
+        '- Manoj Kumar — Lift Operator: +91 9910263062\n' +
+        '- Security Supervisor — Outsourced Security: +91 9599481089\n' +
+        '- Mr. CS Chahar — AR (GA) Housekeeping & Security: ar-admin@sau.int\n' +
+        '- Prof. Navnit Jha — Dean of Students: navnitjha@sau.ac.in, +91 8800933491',
+      metadata: { type: 'contacts', title: 'Hostel contacts (wardens & support)' },
+    },
+    {
+      content:
+        'Hostel facilities and general information:\n' +
+        '- Total capacity: ~1000 units of shared accommodation\n' +
+        '- Structure: 12 different towers\n' +
+        '- Room type: large, spacious, partially furnished shared rooms\n' +
+        '- Eligibility: on-campus housing for Master’s and Doctoral students\n' +
+        '- Max stay (PhD): up to 5 years\n' +
+        '- Vacation policy: Master’s students must vacate during summer/winter breaks\n' +
+        '- Facilities: mess, lounge, fitness centre, playgrounds, frequent cleaning\n' +
+        '- Hostel fee: US $100 per academic semester (SAARC region students)',
+      metadata: { type: 'facilities', title: 'Hostel facilities & eligibility' },
+    },
+    {
+      content:
+        'Hostel Management Committee (HMC) members:\n' +
+        '- Chairperson: Dean of Students\n' +
+        '- Member: Registrar (or nominee)\n' +
+        '- Member: Warden, Boys’ Hostel\n' +
+        '- Member: Warden, Girls’ Hostel\n' +
+        '- Member: Dr. Dhananjay Tripathi (Associate Professor, Dept. of IR, FSS)\n' +
+        '- Member: Dr. Priti Saxena (Assistant Professor (SG), FLSB)\n' +
+        '- Member: President of Hostel Committee (Student Representative)\n' +
+        '- Member Secretary: Assistant Director (HSS)',
+      metadata: { type: 'committee', title: 'Hostel Management Committee (HMC)' },
+    },
+    {
+      content:
         'Gate closing time is 10:30 PM on weekdays and 11:30 PM on weekends. Late entry must be approved by the warden in advance. Guests are allowed until 8 PM only in common areas.',
       metadata: { type: 'rules', title: 'Gate and guest rules' },
+    },
+    {
+      content:
+        'Key hostel rules and regulations:\n' +
+        '- Curfew: all residents must report back to SAU campus by 8:00 PM daily\n' +
+        '- Attendance: mandatory daily signing in attendance and late-night registers\n' +
+        '- Late night / night out: prior written approval by 3:00 PM; late night allowed once a week; night-out limited to 4 non-sequential nights per month\n' +
+        '- Visitors: permitted 8:00 AM to 7:00 PM with warden approval and roommate consent\n' +
+        '- Prohibited items: cooking in rooms; heaters (>500W); ACs; alcohol; drugs; smoking; pets; roof access\n' +
+        '- Fines: INR 10,000 for unauthorized guests; INR 2,000 for lost keys\n' +
+        '- Dress code: proper attire required in all common and academic areas\n' +
+        '- Inspections: authorities may inspect rooms at any time for safety and security',
+      metadata: { type: 'rules', title: 'Rules: curfew, visitors, prohibited items, fines' },
     },
     {
       content:
