@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/shared/LoadingSpinner'
 import EmptyState from '@/components/shared/EmptyState'
 import StatsGridSkeleton from '@/components/shared/StatsGridSkeleton'
 import type { Complaint } from '@/types'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 type RoomApiItem = {
   id: string
@@ -21,6 +22,7 @@ type RoomApiItem = {
 }
 
 export default function StudentDashboard() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const complaintsQuery = useQuery({
     queryKey: ['student-complaints'],
     queryFn: () => api.get('/complaints/mine').then((res) => res.data as Complaint[]),
@@ -108,7 +110,13 @@ export default function StudentDashboard() {
         ]}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1.15fr 0.85fr',
+          gap: 16,
+        }}
+      >
         {cleaning?.feedbackDue ? (
           <div className="card">
             <h3 style={{ fontFamily: 'Sora', fontSize: 16, marginBottom: 10 }}>Cleaning feedback</h3>
@@ -274,4 +282,3 @@ const dangerPillStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontWeight: 700,
 }
-

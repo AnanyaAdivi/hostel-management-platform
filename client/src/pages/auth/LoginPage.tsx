@@ -15,6 +15,7 @@ import toast from 'react-hot-toast'
 import { useAuthStore } from '@/store/authStore'
 import sauLogo from '@/assets/sau-logo.png'
 import { getErrorMessage } from '@/lib/errors'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 const schema = z.object({
   email: z.string().email('Invalid email'),
@@ -35,6 +36,7 @@ const inputStyle = (hasError = false): React.CSSProperties => ({
 })
 
 export default function LoginPage() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const { login } = useAuthStore()
@@ -75,7 +77,7 @@ export default function LoginPage() {
           maxWidth: 1120,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'minmax(280px, 0.92fr) minmax(0, 1.08fr)',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, 0.92fr) minmax(0, 1.08fr)',
           gap: 20,
           alignItems: 'stretch',
         }}

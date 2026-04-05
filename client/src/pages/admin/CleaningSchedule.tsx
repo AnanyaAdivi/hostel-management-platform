@@ -5,6 +5,7 @@ import { Plus, RefreshCw } from 'lucide-react'
 import api from '@/services/api'
 import LoadingSpinner from '@/components/shared/LoadingSpinner'
 import EmptyState from '@/components/shared/EmptyState'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 type Staff = {
   id: string
@@ -34,6 +35,7 @@ type Assignment = {
 }
 
 export default function CleaningSchedule() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const [staffName, setStaffName] = useState('')
   const [staffPhone, setStaffPhone] = useState('')
   const [staffZone, setStaffZone] = useState('')
@@ -138,7 +140,13 @@ export default function CleaningSchedule() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: 16,
+        }}
+      >
         <div className="card">
           <h3 style={{ fontFamily: 'Sora', fontSize: 16, marginTop: 0 }}>Add Staff</h3>
           <div style={{ display: 'grid', gap: 10 }}>
@@ -202,7 +210,13 @@ export default function CleaningSchedule() {
               ))}
             </select>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
+                gap: 10,
+              }}
+            >
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
               <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} style={inputStyle} />
               <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} style={inputStyle} />
@@ -381,4 +395,3 @@ const tdStyle: React.CSSProperties = {
   padding: '12px 10px',
   verticalAlign: 'top',
 }
-

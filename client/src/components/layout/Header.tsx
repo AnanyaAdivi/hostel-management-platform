@@ -14,6 +14,7 @@ export default function Header() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [notifsOpen, setNotifsOpen] = useState(false)
   const isMobile = useMediaQuery('(max-width: 900px)')
+  const isNarrow = useMediaQuery('(max-width: 520px)')
   const { setMobileSidebarOpen } = useUIStore()
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function Header() {
         backdropFilter: 'blur(14px)',
         background: 'rgba(10,15,30,0.75)',
         borderBottom: '1px solid var(--border-default)',
-        padding: '1rem 2rem',
+        padding: isMobile ? '0.9rem 1rem' : '1rem 2rem',
       }}
     >
       <div
@@ -69,71 +70,102 @@ export default function Header() {
           ) : null}
 
           <div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              color: 'var(--accent-secondary)',
-              fontSize: 12,
-              marginBottom: 4,
-              textTransform: 'uppercase',
-              letterSpacing: 1.2,
-            }}
-          >
-            <Sparkles size={12} />
-            Hostel Operations
-          </div>
-          <h2 style={{ fontFamily: 'Sora', fontSize: 20, margin: 0 }}>
-            {user ? `Welcome, ${user.name.split(' ')[0]}` : 'Hostel Portal'}
-          </h2>
+            {!isNarrow ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  color: 'var(--accent-secondary)',
+                  fontSize: 12,
+                  marginBottom: 4,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1.2,
+                }}
+              >
+                <Sparkles size={12} />
+                Hostel Operations
+              </div>
+            ) : null}
+            <h2 style={{ fontFamily: 'Sora', fontSize: isNarrow ? 18 : 20, margin: 0 }}>
+              {user ? `Welcome, ${user.name.split(' ')[0]}` : 'Hostel Portal'}
+            </h2>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          <div
-            className="card-glass"
-            style={{
-              padding: '0.75rem 1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              minWidth: 220,
-              cursor: 'pointer',
-            }}
-            role="button"
-            tabIndex={0}
-            onClick={() => setPaletteOpen(true)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') setPaletteOpen(true)
-            }}
-          >
-            <Command size={16} color="var(--text-tertiary)" />
-            <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>
-              Search pages and actions
-            </span>
-            {!isMobile ? (
-              <span
+          {isNarrow ? (
+            <button
+              className="card-glass"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Open search"
               style={{
-                marginLeft: 'auto',
-                fontSize: 11,
-                color: 'var(--text-tertiary)',
-                padding: '3px 8px',
-                border: '1px solid var(--border-default)',
-                borderRadius: 999,
+                width: 42,
+                height: 42,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 12,
+                cursor: 'pointer',
               }}
             >
-              Ctrl K
+              <Command size={18} color="var(--text-primary)" />
+            </button>
+          ) : (
+            <div
+              className="card-glass"
+              style={{
+                padding: '0.75rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                minWidth: isMobile ? 180 : 220,
+                cursor: 'pointer',
+              }}
+              role="button"
+              tabIndex={0}
+              onClick={() => setPaletteOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') setPaletteOpen(true)
+              }}
+            >
+              <Command size={16} color="var(--text-tertiary)" />
+              <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>
+                Search pages and actions
               </span>
-            ) : null}
-          </div>
+              {!isMobile ? (
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: 11,
+                    color: 'var(--text-tertiary)',
+                    padding: '3px 8px',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: 999,
+                  }}
+                >
+                  Ctrl K
+                </span>
+              ) : null}
+            </div>
+          )}
 
-          <div className="card-glass" style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <CalendarDays size={16} color="var(--accent-secondary)" />
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-              {format(new Date(), 'EEE, dd MMM yyyy')}
-            </span>
-          </div>
+          {!isNarrow ? (
+            <div
+              className="card-glass"
+              style={{
+                padding: '0.75rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <CalendarDays size={16} color="var(--accent-secondary)" />
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                {format(new Date(), 'EEE, dd MMM yyyy')}
+              </span>
+            </div>
+          ) : null}
 
           <div style={{ position: 'relative' }}>
             <button

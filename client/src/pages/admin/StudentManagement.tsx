@@ -8,6 +8,7 @@ import StatusBadge from '@/components/shared/StatusBadge'
 import { getErrorMessage } from '@/lib/errors'
 import CardListSkeleton from '@/components/shared/CardListSkeleton'
 import type { ApprovalStatus } from '@/types'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 type Student = {
   id: string
@@ -57,6 +58,7 @@ type RoomApiItem = {
 }
 
 export default function StudentManagement() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const queryClient = useQueryClient()
 
   const [view, setView] = useState<'pending' | 'students'>('pending')
@@ -269,7 +271,13 @@ export default function StudentManagement() {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1.2fr 0.8fr',
+          gap: 16,
+        }}
+      >
         <div className="card">
           <div style={{ display: 'grid', gap: 14 }}>
             {filteredStudents.map((student) => (

@@ -6,6 +6,7 @@ import EmptyState from '@/components/shared/EmptyState'
 import RoomListSkeleton from '@/components/shared/RoomListSkeleton'
 import StatusBadge from '@/components/shared/StatusBadge'
 import { useAuthStore } from '@/store/authStore'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 type Room = {
   id: string
@@ -21,6 +22,7 @@ type Room = {
 }
 
 export default function MyRoomPage() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const { user } = useAuthStore()
   const roomQuery = useQuery({
     queryKey: ['my-room'],
@@ -59,7 +61,13 @@ export default function MyRoomPage() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.9fr', gap: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 0.9fr',
+          gap: 16,
+        }}
+      >
         <div className="card">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
@@ -69,7 +77,14 @@ export default function MyRoomPage() {
             <StatusBadge status={room.status} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 20 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+              gap: 12,
+              marginTop: 20,
+            }}
+          >
             {[
               ['Block', room.block],
               ['Floor', String(room.floor)],

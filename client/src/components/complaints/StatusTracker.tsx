@@ -12,7 +12,7 @@ export default function StatusTracker({ status }: { status: ComplaintStatus }) {
         <h3 style={{ fontFamily: 'Sora', fontSize: 15, margin: 0 }}>Progress</h3>
         <StatusBadge status={status} />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10 }}>
         {order.map((step, index) => {
           const active = currentIndex >= index || status === 'REJECTED'
           return (

@@ -15,6 +15,7 @@ import toast from 'react-hot-toast'
 import api from '@/services/api'
 import sauLogo from '@/assets/sau-logo.png'
 import { getErrorMessage } from '@/lib/errors'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 const sportsOptions = [
   'Football',
@@ -65,6 +66,7 @@ const sectionTitleStyle: React.CSSProperties = {
 }
 
 export default function RegisterPage() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const navigate = useNavigate()
   const [uploading, setUploading] = useState(false)
   const {
@@ -125,7 +127,7 @@ export default function RegisterPage() {
           maxWidth: 1180,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'minmax(280px, 0.9fr) minmax(0, 1.35fr)',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(280px, 0.9fr) minmax(0, 1.35fr)',
           gap: 20,
           alignItems: 'start',
         }}

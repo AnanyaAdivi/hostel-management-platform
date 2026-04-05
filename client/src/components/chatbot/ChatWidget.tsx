@@ -4,8 +4,10 @@ import { Bot, MessageCircle, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useChatStore } from '@/store/chatStore'
 import ChatWindow from './ChatWindow'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 export default function ChatWidget() {
+  const isNarrow = useMediaQuery('(max-width: 520px)')
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const { isStudent } = useAuth()
@@ -108,7 +110,14 @@ export default function ChatWidget() {
   }
 
   return (
-    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 100 }}>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: isNarrow ? 16 : 24,
+        right: isNarrow ? 16 : 24,
+        zIndex: 100,
+      }}
+    >
       <AnimatePresence>
         {isOpen ? (
           <motion.div
@@ -119,7 +128,8 @@ export default function ChatWidget() {
               position: 'absolute',
               bottom: 68,
               right: 0,
-              width: 360,
+              width: isNarrow ? 'calc(100vw - 32px)' : 360,
+              maxWidth: 420,
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-default)',
               borderRadius: 16,

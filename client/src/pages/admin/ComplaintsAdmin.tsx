@@ -7,10 +7,12 @@ import StatusBadge from '@/components/shared/StatusBadge'
 import type { Complaint, ComplaintStatus } from '@/types'
 import { getErrorMessage } from '@/lib/errors'
 import CardListSkeleton from '@/components/shared/CardListSkeleton'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 const statuses: ComplaintStatus[] = ['PENDING', 'UNDER_REVIEW', 'IN_PROGRESS', 'RESOLVED', 'REJECTED']
 
 export default function ComplaintsAdmin() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const [filter, setFilter] = useState('')
   const [notes, setNotes] = useState<Record<string, string>>({})
   const complaintsQuery = useQuery({
@@ -85,7 +87,14 @@ export default function ComplaintsAdmin() {
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 16 }}>
               {complaint.description}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr 140px', gap: 12, marginTop: 16 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : '180px 1fr 140px',
+                gap: 12,
+                marginTop: 16,
+              }}
+            >
               <select
                 defaultValue={complaint.status}
                 onChange={(e) =>

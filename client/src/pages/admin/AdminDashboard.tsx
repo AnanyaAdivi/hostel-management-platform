@@ -20,6 +20,7 @@ import StatsGridSkeleton from '@/components/shared/StatsGridSkeleton'
 import StatusBadge from '@/components/shared/StatusBadge'
 import StatsGrid from '@/components/dashboard/StatsGrid'
 import type { AdminDashboardStats } from '@/types'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 
 const weekData = [
   { day: 'Mon', complaints: 3, resolved: 2 },
@@ -41,6 +42,7 @@ const categoryData = [
 ]
 
 export default function AdminDashboard() {
+  const isMobile = useMediaQuery('(max-width: 900px)')
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => api.get('/dashboard/admin-stats').then((r) => r.data as AdminDashboardStats),
@@ -98,7 +100,13 @@ export default function AdminDashboard() {
         ]}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: 16,
+        }}
+      >
         <div className="card">
           <h3 style={{ fontFamily: 'Sora', fontSize: 15, fontWeight: 600, marginBottom: 16 }}>
             Complaints this week
