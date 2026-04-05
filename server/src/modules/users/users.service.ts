@@ -1,14 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ApprovalStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
-type SortBy = 'course' | 'sports' | 'career' | 'approval'
+type SortBy = 'course' | 'sports' | 'career' | 'approval';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listStudents(sortBy: SortBy = 'course', approvalStatus?: ApprovalStatus) {
+  async listStudents(
+    sortBy: SortBy = 'course',
+    approvalStatus?: ApprovalStatus,
+  ) {
     const students = await this.prisma.user.findMany({
       where: {
         role: 'STUDENT',
@@ -26,7 +29,9 @@ export class UsersService {
 
     return students.sort((left, right) => {
       if (sortBy === 'sports') {
-        return (left.sportsInterests[0] || '').localeCompare(right.sportsInterests[0] || '');
+        return (left.sportsInterests[0] || '').localeCompare(
+          right.sportsInterests[0] || '',
+        );
       }
       if (sortBy === 'career') {
         return (left.careerGoal || '').localeCompare(right.careerGoal || '');
@@ -39,7 +44,11 @@ export class UsersService {
     });
   }
 
-  async updateApproval(studentId: string, status: ApprovalStatus, approvedBy?: string) {
+  async updateApproval(
+    studentId: string,
+    status: ApprovalStatus,
+    approvedBy?: string,
+  ) {
     const student = await this.prisma.user.findUnique({
       where: { id: studentId },
     });
@@ -106,7 +115,8 @@ export class UsersService {
         if (
           candidate.careerGoal &&
           student.careerGoal &&
-          candidate.careerGoal.toLowerCase() === student.careerGoal.toLowerCase()
+          candidate.careerGoal.toLowerCase() ===
+            student.careerGoal.toLowerCase()
         ) {
           score += 2;
           reasons.push('same career goal');

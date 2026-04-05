@@ -23,7 +23,7 @@ export class NotificationsService {
     return notif;
   }
 
-  async broadcastAnnouncement(title: string, message: string, isUrgent = false) {
+  broadcastAnnouncement(title: string, message: string, isUrgent = false) {
     this.gateway.broadcast('announcement', {
       title,
       message,

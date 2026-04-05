@@ -22,7 +22,7 @@ The project includes:
 - Room listing and room allocation views
 - Named complaints and anonymous complaints
 - Image upload via Cloudinary
-- AI chatbot via Claude
+- AI chatbot via Gemini (RAG-enabled)
 - Real-time notifications via Socket.IO
 
 ## Current Sign-In Issue
@@ -116,6 +116,10 @@ JWT_SECRET="hostel-jwt-secret-change-in-prod-2026"
 JWT_REFRESH_SECRET="hostel-refresh-secret-change-in-prod-2026"
 JWT_EXPIRES_IN="15m"
 JWT_REFRESH_EXPIRES_IN="7d"
+GEMINI_API_KEY="your-gemini-api-key"
+GEMINI_CHAT_MODEL="gemini-1.5-flash"
+GEMINI_EMBED_MODEL="text-embedding-004"
+GEMINI_API_BASE_URL="https://generativelanguage.googleapis.com"
 ANTHROPIC_API_KEY="sk-ant-your-key-here"
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"
@@ -148,7 +152,7 @@ Optional but used by features:
 
 - Redis on `localhost:6379`
 - Cloudinary account
-- Anthropic API key
+- Gemini API key (chatbot)
 
 ## Database Setup
 
@@ -366,10 +370,10 @@ If login fails, check:
 
 ### Chatbot
 
-- chatbot uses LLM
+- chatbot uses Gemini + embeddings-based RAG over `KnowledgeBase`
 - it uses basic intent classification
 - it reads live room/complaint data where relevant
-- it falls back to keyword search in the knowledge base
+- if KB embeddings are missing, it can lazily embed a few entries or fall back to keyword search
 
 ### Notifications
 
@@ -382,7 +386,7 @@ If login fails, check:
 - Redis is configured but not actively required for the current happy path
 - Maintenance and announcements backend CRUD are not fully built yet
 - Cloudinary upload needs valid account credentials
-- Claude chatbot needs a valid Anthropic API key
+- Gemini chatbot needs a valid `GEMINI_API_KEY` (and ideally pre-indexed KB embeddings)
 
 ## Quick Troubleshooting
 
@@ -421,7 +425,8 @@ Likely causes:
 
 Likely causes:
 
-- missing `LLM_API_KEY`
+- missing `GEMINI_API_KEY`
+- KB embeddings not indexed yet (run `POST /api/v1/chatbot/kb/reindex` as an admin/warden)
 
 ## Current Status
 

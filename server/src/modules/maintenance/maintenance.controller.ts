@@ -39,7 +39,10 @@ export class MaintenanceController {
     @Req() req: { user: { name: string; email: string } },
     @Body() dto: CreateMaintenanceDto,
   ) {
-    return this.maintenanceService.create(dto, `${req.user.name} (${req.user.email})`);
+    return this.maintenanceService.create(
+      dto,
+      `${req.user.name} (${req.user.email})`,
+    );
   }
 
   @Patch(':id')
@@ -52,7 +55,10 @@ export class MaintenanceController {
   @Patch(':id/status')
   @UseGuards(RolesGuard)
   @Roles('ADMIN', 'WARDEN')
-  updateStatus(@Param('id') id: string, @Body() dto: UpdateMaintenanceStatusDto) {
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateMaintenanceStatusDto,
+  ) {
     return this.maintenanceService.updateStatus(id, dto);
   }
 

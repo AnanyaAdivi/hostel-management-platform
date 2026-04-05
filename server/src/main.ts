@@ -2,7 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
-import { static as expressStatic } from 'express';
+import { static as expressStatic, type RequestHandler } from 'express';
 import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import { NestFactory } from '@nestjs/core';
@@ -18,8 +18,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const allowedOrigins = getAllowedOrigins();
   app.use(cookieParser());
-  app.use(helmet());
-  app.use(compression());
+  app.use(helmet() as RequestHandler);
+  const compressionFactory = compression as unknown as () => RequestHandler;
+  app.use(compressionFactory());
 
   const uploadsDir = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsDir)) {
@@ -28,7 +29,10 @@ async function bootstrap() {
   app.use('/uploads', expressStatic(uploadsDir));
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean) => void,
+    ) => {
       if (isAllowedOrigin(origin)) {
         callback(null, true);
         return;
@@ -58,11 +62,11 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT || 3001;
+  const port = Number.parseInt(process.env.PORT || '3001', 10);
   const host = process.env.HOST || '0.0.0.0';
   await app.listen(port, host);
   console.log(`Server running on http://${host}:${port}/api/v1`);
   console.log(`Allowed client origins: ${allowedOrigins.join(', ')}`);
   console.log(`Swagger docs at http://${host}:${port}/api/docs`);
 }
-bootstrap();
+void bootstrap();

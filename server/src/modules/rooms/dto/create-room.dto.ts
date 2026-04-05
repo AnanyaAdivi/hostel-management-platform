@@ -1,10 +1,4 @@
-import {
-  IsArray,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsArray, IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { RoomStatus } from '@prisma/client';
 
 export class CreateRoomDto {

@@ -12,8 +12,8 @@ export class UploadService {
   constructor() {
     this.hasCloudinaryConfig = Boolean(
       process.env.CLOUDINARY_CLOUD_NAME &&
-        process.env.CLOUDINARY_API_KEY &&
-        process.env.CLOUDINARY_API_SECRET,
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET,
     );
 
     cloudinary.config({
@@ -85,7 +85,8 @@ export class UploadService {
     const uploadsDir = join(process.cwd(), 'uploads');
     await mkdir(uploadsDir, { recursive: true });
 
-    const extension = extname(file.originalname || '') || this.extensionFromMime(file.mimetype);
+    const extension =
+      extname(file.originalname || '') || this.extensionFromMime(file.mimetype);
     const fileName = `${randomUUID()}${extension}`;
     const filePath = join(uploadsDir, fileName);
 

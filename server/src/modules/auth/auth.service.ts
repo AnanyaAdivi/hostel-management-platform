@@ -10,6 +10,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import { parseJwtExpiresIn } from './jwt-expiry';
 
 @Injectable()
 export class AuthService {
@@ -34,10 +35,19 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const { password, role: _ignoredRole, ...studentProfile } = dto;
     const user = await this.prisma.user.create({
       data: {
-        ...studentProfile,
+        name: dto.name,
+        email: dto.email,
+        phone: dto.phone,
+        avatarUrl: dto.avatarUrl,
+        enrollmentNo: dto.enrollmentNo,
+        course: dto.course,
+        gender: dto.gender,
+        sportsInterests: dto.sportsInterests,
+        careerGoal: dto.careerGoal,
+        address: dto.address,
+        parentContactNo: dto.parentContactNo,
         role: Role.STUDENT,
         password: hashedPassword,
         approvalStatus: 'PENDING',
@@ -68,7 +78,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const valid = await bcrypt.compare(dto.password, user.password);
+    const { password: hashedPassword, ...safeUser } = user;
+    const valid = await bcrypt.compare(dto.password, hashedPassword);
     if (!valid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -80,7 +91,6 @@ export class AuthService {
     }
 
     const tokens = await this.generateTokens(user.id, user.email, user.role);
-    const { password, ...safeUser } = user;
     return { user: safeUser, ...tokens };
   }
 
@@ -107,11 +117,11 @@ export class AuthService {
     const payload = { sub: userId, email, role };
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET || 'hostel-jwt-secret',
-      expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any,
+      expiresIn: parseJwtExpiresIn(process.env.JWT_EXPIRES_IN, '15m'),
     });
     const refreshToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any,
+      expiresIn: parseJwtExpiresIn(process.env.JWT_REFRESH_EXPIRES_IN, '7d'),
     });
 
     return { accessToken, refreshToken };

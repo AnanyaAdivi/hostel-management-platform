@@ -1,5 +1,4 @@
-import { Injectable } from '@nestjs/common';
-import Anthropic from '@anthropic-ai/sdk';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface ChatMessage {
@@ -9,22 +8,33 @@ interface ChatMessage {
 
 type IntentType = 'LIVE_DATA' | 'HOSTEL_FAQ' | 'COMPLAINT_ACTION' | 'GENERAL';
 
+type KnowledgeBaseEntry = {
+  id: string;
+  content: string;
+  embedding: string | null;
+  metadata: unknown;
+  createdAt: Date;
+};
+
 @Injectable()
 export class ChatbotService {
-  private readonly anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
-
   constructor(private readonly prisma: PrismaService) {}
 
   async chat(message: string, userId: string, history: ChatMessage[] = []) {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      throw new ServiceUnavailableException(
+        'Chatbot is not configured. Set GEMINI_API_KEY on the server.',
+      );
+    }
+
     const intent = this.classifyIntent(message);
     let contextData = '';
 
     if (intent === 'LIVE_DATA') {
       contextData = await this.getLiveData(userId);
-    } else if (intent === 'HOSTEL_FAQ') {
-      contextData = await this.searchKnowledgeBase(message);
+    } else if (intent === 'HOSTEL_FAQ' || intent === 'GENERAL') {
+      contextData = await this.getRagContext(message);
     } else if (intent === 'COMPLAINT_ACTION') {
       contextData = await this.getComplaintContext(userId);
     }
@@ -45,25 +55,18 @@ Guidelines:
 - If you don't know something, suggest contacting the warden at warden@sau.ac.in
 - For urgent issues, suggest calling the warden's office
 - Format responses clearly, use bullet points for lists
-- Keep responses under 150 words unless detailed info is needed${
-      contextData ? `\nRelevant context:\n${contextData}` : ''
-    }`;
+- Keep responses under 150 words unless detailed info is needed.`;
 
-    const response = await this.anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      system: systemPrompt,
-      messages: [
-        ...history.slice(-6).map((item) => ({
-          role: item.role,
-          content: item.content,
-        })),
-        { role: 'user', content: message },
-      ],
+    const responseText = await this.generateGeminiResponse({
+      apiKey,
+      systemPrompt,
+      contextData,
+      message,
+      history,
     });
 
     return {
-      message: (response.content[0] as { text?: string }).text ?? '',
+      message: responseText,
       intent,
     };
   }
@@ -145,7 +148,7 @@ Guidelines:
       .filter((word) => word.length > 3);
 
     const entries = await this.prisma.knowledgeBase.findMany({
-      take: 3,
+      take: 10,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -153,14 +156,9 @@ Guidelines:
       keywords.some((keyword) => entry.content.toLowerCase().includes(keyword)),
     );
 
-    if (relevant.length === 0) {
-      return entries
-        .slice(0, 2)
-        .map((entry) => entry.content)
-        .join('\n\n');
-    }
-
-    return relevant.map((entry) => entry.content).join('\n\n');
+    return (relevant.length ? relevant : entries.slice(0, 3))
+      .map((entry) => entry.content)
+      .join('\n\n');
   }
 
   private async getComplaintContext(userId: string): Promise<string> {
@@ -182,4 +180,277 @@ Guidelines:
       )
       .join('\n')}`;
   }
+
+  async reindexKnowledgeBase() {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      throw new ServiceUnavailableException(
+        'Chatbot is not configured. Set GEMINI_API_KEY on the server.',
+      );
+    }
+
+    const entries = await this.prisma.knowledgeBase.findMany({
+      orderBy: { createdAt: 'asc' },
+    });
+
+    let updated = 0;
+    for (const entry of entries) {
+      if (entry.embedding) continue;
+      const embedding = await this.embedText(apiKey, entry.content);
+      await this.prisma.knowledgeBase.update({
+        where: { id: entry.id },
+        data: { embedding: JSON.stringify(embedding) },
+      });
+      updated += 1;
+    }
+
+    return { total: entries.length, updated };
+  }
+
+  private async getRagContext(query: string): Promise<string> {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      return this.searchKnowledgeBase(query);
+    }
+
+    const queryEmbedding = await this.embedText(apiKey, query);
+
+    const entries = (await this.prisma.knowledgeBase.findMany({
+      take: 200,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        content: true,
+        embedding: true,
+        metadata: true,
+        createdAt: true,
+      },
+    })) as KnowledgeBaseEntry[];
+
+    const scored = entries
+      .map((entry) => {
+        const embedding = this.tryParseEmbedding(entry.embedding);
+        if (!embedding) return null;
+        return {
+          entry,
+          score: cosineSimilarity(queryEmbedding, embedding),
+        };
+      })
+      .filter(Boolean) as Array<{ entry: KnowledgeBaseEntry; score: number }>;
+
+    if (scored.length < 4) {
+      // lazily embed a few newest entries, then score again
+      const toEmbed = entries.filter((e) => !e.embedding).slice(0, 10);
+      for (const entry of toEmbed) {
+        const embedding = await this.embedText(apiKey, entry.content);
+        await this.prisma.knowledgeBase.update({
+          where: { id: entry.id },
+          data: { embedding: JSON.stringify(embedding) },
+        });
+      }
+
+      const refreshed = (await this.prisma.knowledgeBase.findMany({
+        take: 200,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          content: true,
+          embedding: true,
+          metadata: true,
+          createdAt: true,
+        },
+      })) as KnowledgeBaseEntry[];
+
+      const rescored = refreshed
+        .map((entry) => {
+          const embedding = this.tryParseEmbedding(entry.embedding);
+          if (!embedding) return null;
+          return { entry, score: cosineSimilarity(queryEmbedding, embedding) };
+        })
+        .filter(Boolean) as Array<{ entry: KnowledgeBaseEntry; score: number }>;
+
+      return this.formatContext(rescored);
+    }
+
+    return this.formatContext(scored);
+  }
+
+  private formatContext(
+    scored: Array<{ entry: KnowledgeBaseEntry; score: number }>,
+  ): string {
+    const top = scored
+      .sort((a, b) => b.score - a.score)
+      .filter((item) => item.score >= 0.2)
+      .slice(0, 4);
+
+    if (top.length === 0) return '';
+
+    return top
+      .map(({ entry }) => {
+        const title = getMetadataTitle(entry.metadata);
+        return title ? `### ${title}\n${entry.content}` : entry.content;
+      })
+      .join('\n\n');
+  }
+
+  private tryParseEmbedding(raw: string | null): number[] | null {
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return null;
+      const values = parsed.filter((v) => typeof v === 'number');
+      if (values.length < 10) return null;
+      return values;
+    } catch {
+      return null;
+    }
+  }
+
+  private async embedText(apiKey: string, text: string): Promise<number[]> {
+    const baseUrl =
+      process.env.GEMINI_API_BASE_URL?.trim() ||
+      'https://generativelanguage.googleapis.com';
+    const model =
+      process.env.GEMINI_EMBED_MODEL?.trim() || 'text-embedding-004';
+
+    const controller = new AbortController();
+    const timeoutMs = 10_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(
+        `${baseUrl}/v1beta/models/${model}:embedContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            content: { parts: [{ text }] },
+          }),
+          signal: controller.signal,
+        },
+      );
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new ServiceUnavailableException(
+          `Embedding request failed (${res.status}): ${text || res.statusText}`,
+        );
+      }
+
+      const data = (await res.json()) as {
+        embedding?: { values?: number[] };
+      };
+      const values = data.embedding?.values;
+      if (!values || !Array.isArray(values) || values.length === 0) {
+        throw new ServiceUnavailableException('Embedding response was empty.');
+      }
+      return values;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private async generateGeminiResponse({
+    apiKey,
+    systemPrompt,
+    contextData,
+    message,
+    history,
+  }: {
+    apiKey: string;
+    systemPrompt: string;
+    contextData: string;
+    message: string;
+    history: ChatMessage[];
+  }): Promise<string> {
+    const baseUrl =
+      process.env.GEMINI_API_BASE_URL?.trim() ||
+      'https://generativelanguage.googleapis.com';
+    const model = process.env.GEMINI_CHAT_MODEL?.trim() || 'gemini-1.5-flash';
+
+    const controller = new AbortController();
+    const timeoutMs = 25_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    const contents = [
+      ...history.slice(-6).map((item) => ({
+        role: item.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: item.content }],
+      })),
+      {
+        role: 'user',
+        parts: [
+          {
+            text:
+              contextData && contextData.trim().length
+                ? `Context (hostel knowledge + data):\n${contextData}\n\nUser message:\n${message}`
+                : message,
+          },
+        ],
+      },
+    ];
+
+    try {
+      const res = await fetch(
+        `${baseUrl}/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents,
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 450,
+            },
+          }),
+          signal: controller.signal,
+        },
+      );
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new ServiceUnavailableException(
+          `Chat request failed (${res.status}): ${text || res.statusText}`,
+        );
+      }
+
+      const data = (await res.json()) as {
+        candidates?: Array<{
+          content?: { parts?: Array<{ text?: string }> };
+        }>;
+      };
+
+      const text =
+        data.candidates?.[0]?.content?.parts
+          ?.map((p) => p.text || '')
+          .join('') || '';
+      return text.trim();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
+
+function cosineSimilarity(left: number[], right: number[]) {
+  const size = Math.min(left.length, right.length);
+  let dot = 0;
+  let leftNorm = 0;
+  let rightNorm = 0;
+  for (let i = 0; i < size; i += 1) {
+    const a = left[i] ?? 0;
+    const b = right[i] ?? 0;
+    dot += a * b;
+    leftNorm += a * a;
+    rightNorm += b * b;
+  }
+  const denom = Math.sqrt(leftNorm) * Math.sqrt(rightNorm);
+  if (!denom) return 0;
+  return dot / denom;
+}
+
+function getMetadataTitle(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const title = (metadata as { title?: unknown }).title;
+  return typeof title === 'string' && title.trim().length ? title.trim() : null;
 }

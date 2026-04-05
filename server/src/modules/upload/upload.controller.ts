@@ -24,7 +24,11 @@ export class UploadController {
     const host = req.get('host');
     const baseUrl = host ? `${proto}://${host}` : undefined;
 
-    const url = await this.uploadService.uploadImage(file, 'hostel-complaints', baseUrl);
+    const url = await this.uploadService.uploadImage(
+      file,
+      'hostel-complaints',
+      baseUrl,
+    );
     return { url };
   }
 }

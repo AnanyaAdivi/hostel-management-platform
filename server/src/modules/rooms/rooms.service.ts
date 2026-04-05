@@ -98,7 +98,9 @@ export class RoomsService {
       throw new NotFoundException('Student not found');
     }
     if (student.approvalStatus !== 'APPROVED') {
-      throw new BadRequestException('Student must be approved before room allocation');
+      throw new BadRequestException(
+        'Student must be approved before room allocation',
+      );
     }
 
     const room = await this.prisma.room.findUnique({

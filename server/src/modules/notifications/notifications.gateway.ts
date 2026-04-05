@@ -31,11 +31,22 @@ export class NotificationsGateway
 
   constructor(private readonly jwtService: JwtService) {}
 
-  async handleConnection(client: Socket) {
+  handleConnection(client: Socket) {
     try {
+      const auth = (client.handshake.auth || {}) as { token?: unknown };
+      const header = client.handshake.headers?.authorization;
+      const authHeader =
+        typeof header === 'string'
+          ? header
+          : Array.isArray(header)
+            ? header[0]
+            : undefined;
+
+      const tokenFromHeader = authHeader?.startsWith('Bearer ')
+        ? authHeader.slice('Bearer '.length)
+        : undefined;
       const token =
-        client.handshake.auth?.token ||
-        client.handshake.headers?.authorization?.split(' ')[1];
+        typeof auth.token === 'string' ? auth.token : tokenFromHeader;
 
       if (!token) {
         client.disconnect();
@@ -47,9 +58,9 @@ export class NotificationsGateway
       });
 
       this.connectedUsers.set(payload.sub, client.id);
-      client.data.userId = payload.sub;
-      client.join(`user:${payload.sub}`);
-      client.join(`role:${payload.role}`);
+      (client.data as { userId?: string }).userId = payload.sub;
+      void client.join(`user:${payload.sub}`);
+      void client.join(`role:${payload.role}`);
       this.logger.log(`User connected: ${payload.sub}`);
     } catch {
       client.disconnect();
@@ -57,7 +68,7 @@ export class NotificationsGateway
   }
 
   handleDisconnect(client: Socket) {
-    const userId = client.data?.userId as string | undefined;
+    const userId = (client.data as { userId?: string } | undefined)?.userId;
     if (userId) {
       this.connectedUsers.delete(userId);
     }

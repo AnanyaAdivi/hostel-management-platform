@@ -24,7 +24,7 @@ export class AnnouncementsService {
       },
     });
 
-    await this.notificationsService.broadcastAnnouncement(
+    this.notificationsService.broadcastAnnouncement(
       announcement.title,
       announcement.content,
       announcement.isUrgent,
@@ -64,7 +64,9 @@ export class AnnouncementsService {
   }
 
   private async ensureExists(id: string) {
-    const announcement = await this.prisma.announcement.findUnique({ where: { id } });
+    const announcement = await this.prisma.announcement.findUnique({
+      where: { id },
+    });
     if (!announcement) {
       throw new NotFoundException('Announcement not found');
     }

@@ -46,7 +46,7 @@ hostel-platform/
 - The Prisma schema has been adjusted to avoid `pgvector` being required locally.
 - `KnowledgeBase.embedding` is currently stored as `String?` in the schema instead of a vector type.
 - Redis is configured in environment variables, but it is not required for the main local login flow.
-- Cloudinary and Anthropic keys are optional for basic local startup, but related features may fail without them.
+- Cloudinary, Gemini, and Anthropic keys are optional for basic local startup, but related features may fail without them.
 
 ## Core Local Requirements
 
@@ -90,6 +90,10 @@ JWT_SECRET="hostel-jwt-secret-change-in-prod-2026"
 JWT_REFRESH_SECRET="hostel-refresh-secret-change-in-prod-2026"
 JWT_EXPIRES_IN="15m"
 JWT_REFRESH_EXPIRES_IN="7d"
+GEMINI_API_KEY="your-gemini-api-key"
+GEMINI_CHAT_MODEL="gemini-1.5-flash"
+GEMINI_EMBED_MODEL="text-embedding-004"
+GEMINI_API_BASE_URL="https://generativelanguage.googleapis.com"
 ANTHROPIC_API_KEY="sk-ant-your-key-here"
 CLOUDINARY_CLOUD_NAME="your-cloud-name"
 CLOUDINARY_API_KEY="your-api-key"

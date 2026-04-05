@@ -28,7 +28,11 @@ export class MaintenanceService {
   async findAll(status?: MaintenanceStatus) {
     return this.prisma.maintenanceTask.findMany({
       where: status ? { status } : undefined,
-      orderBy: [{ status: 'asc' }, { scheduledAt: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [
+        { status: 'asc' },
+        { scheduledAt: 'asc' },
+        { createdAt: 'desc' },
+      ],
     });
   }
 
@@ -61,7 +65,9 @@ export class MaintenanceService {
   }
 
   private async ensureExists(id: string) {
-    const task = await this.prisma.maintenanceTask.findUnique({ where: { id } });
+    const task = await this.prisma.maintenanceTask.findUnique({
+      where: { id },
+    });
     if (!task) {
       throw new NotFoundException('Maintenance task not found');
     }

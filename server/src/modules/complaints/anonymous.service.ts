@@ -77,25 +77,28 @@ export class AnonymousService {
   }
 
   private async validateImage(imageUrl: string): Promise<boolean> {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return true;
+    }
+
     try {
+      const messages: Anthropic.Messages.MessageParam[] = [
+        {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'url', url: imageUrl } },
+            {
+              type: 'text',
+              text: 'Does this image show a hostel maintenance issue, cleanliness problem, infrastructure damage, broken furniture, plumbing issue, or any facility concern in a residential building? Reply only YES or NO.',
+            },
+          ],
+        },
+      ];
+
       const response = await this.anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 20,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image',
-                source: { type: 'url', url: imageUrl },
-              },
-              {
-                type: 'text',
-                text: 'Does this image show a hostel maintenance issue, cleanliness problem, infrastructure damage, broken furniture, plumbing issue, or any facility concern in a residential building? Reply only YES or NO.',
-              },
-            ],
-          } as any,
-        ],
+        messages,
       });
 
       const answer = (

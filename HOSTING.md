@@ -62,7 +62,11 @@ JWT_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
 HASH_SALT=<strong-random-string>
 HOSTEL_NAME=South Asian University Hostel
-ANTHROPIC_API_KEY=<optional if chatbot is enabled>
+GEMINI_API_KEY=<optional if chatbot is enabled>
+GEMINI_CHAT_MODEL=gemini-1.5-flash
+GEMINI_EMBED_MODEL=text-embedding-004
+GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com
+ANTHROPIC_API_KEY=<optional if image validation is enabled>
 CLOUDINARY_CLOUD_NAME=<optional if uploads are enabled>
 CLOUDINARY_API_KEY=<optional if uploads are enabled>
 CLOUDINARY_API_SECRET=<optional if uploads are enabled>
@@ -87,6 +91,14 @@ npx prisma db seed
 ```
 
 Do this once per environment if you want the demo accounts and sample data.
+
+### Index hostel knowledge (RAG)
+
+If `GEMINI_API_KEY` is set and you seeded `KnowledgeBase` entries, generate embeddings once:
+
+- open Swagger at `https://api.yourdomain.com/api/docs`
+- authorize as admin/warden
+- call `POST /api/v1/chatbot/kb/reindex`
 
 ## 3. Deploy Frontend to Vercel
 

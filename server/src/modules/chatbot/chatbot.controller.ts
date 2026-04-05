@@ -1,9 +1,17 @@
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { IsArray, IsIn, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ChatbotService } from './chatbot.service';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 class ChatHistoryDto {
   @IsIn(['user', 'assistant'])
@@ -33,6 +41,17 @@ export class ChatbotController {
 
   @Post('message')
   chat(@Req() req: { user: { id: string } }, @Body() dto: ChatDto) {
-    return this.chatbotService.chat(dto.message, req.user.id, dto.history || []);
+    return this.chatbotService.chat(
+      dto.message,
+      req.user.id,
+      dto.history || [],
+    );
+  }
+
+  @Post('kb/reindex')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'WARDEN')
+  reindexKnowledgeBase() {
+    return this.chatbotService.reindexKnowledgeBase();
   }
 }

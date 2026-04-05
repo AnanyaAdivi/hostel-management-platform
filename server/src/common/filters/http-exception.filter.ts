@@ -30,7 +30,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       typeof exceptionResponse === 'object' &&
       'message' in exceptionResponse
     ) {
-      const value = (exceptionResponse as { message?: string | string[] }).message;
+      const value = (exceptionResponse as { message?: string | string[] })
+        .message;
       message = Array.isArray(value) ? value.join(', ') : value || message;
     } else if (exception instanceof Error && exception.message) {
       message = exception.message;
