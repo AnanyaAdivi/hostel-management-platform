@@ -49,7 +49,10 @@ export default function ChatWindow({
               }}
             >
               {msg.content}
-              {msg.role === 'assistant' && msg.sources && msg.sources.length ? (
+              {msg.role === 'assistant' &&
+              msg.content.trim().length > 0 &&
+              msg.sources &&
+              msg.sources.length ? (
                 <div style={{ marginTop: 8, fontSize: 11, opacity: 0.75 }}>
                   Sources:{' '}
                   {msg.sources

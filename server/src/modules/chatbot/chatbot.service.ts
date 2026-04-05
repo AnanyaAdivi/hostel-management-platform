@@ -40,14 +40,15 @@ export class ChatbotService {
       );
     }
 
-    const intent = this.classifyIntent(message);
+    const isHello = isGreeting(message);
+    const intent = isHello ? 'GENERAL' : this.classifyIntent(message);
     let contextData = '';
     let sources: RagSource[] = [];
     let ragTopScore: number | null = null;
 
     if (intent === 'LIVE_DATA') {
       contextData = await this.getLiveData(userId);
-    } else if (intent === 'HOSTEL_FAQ' || intent === 'GENERAL') {
+    } else if (!isHello && (intent === 'HOSTEL_FAQ' || intent === 'GENERAL')) {
       await this.ensureDefaultsOnce();
       const rag = await this.getRagContext(message);
       contextData = rag.context;
@@ -67,7 +68,10 @@ You help students with:
 - General campus and hostel life queries
 
 Guidelines:
-- Be warm, concise, and helpful
+- Be warm, concise, and helpful (light humor is okay: max 1 short witty line per answer)
+- Prioritize accuracy over creativity. If you are unsure, say so.
+- Never just repeat the user's message.
+- For timings/menus/rules, answer directly with exact times/items when available.
 - If you don't know something, suggest contacting the warden at warden@sau.ac.in
 - For urgent issues, suggest calling the warden's office
 - Format responses clearly, use bullet points for lists
@@ -109,14 +113,15 @@ Guidelines:
       );
     }
 
-    const intent = this.classifyIntent(message);
+    const isHello = isGreeting(message);
+    const intent = isHello ? 'GENERAL' : this.classifyIntent(message);
     let contextData = '';
     let sources: RagSource[] = [];
     let ragTopScore: number | null = null;
 
     if (intent === 'LIVE_DATA') {
       contextData = await this.getLiveData(userId);
-    } else if (intent === 'HOSTEL_FAQ' || intent === 'GENERAL') {
+    } else if (!isHello && (intent === 'HOSTEL_FAQ' || intent === 'GENERAL')) {
       await this.ensureDefaultsOnce();
       const rag = await this.getRagContext(message);
       contextData = rag.context;
@@ -137,7 +142,10 @@ You help students with:
 - General campus and hostel life queries
 
 Guidelines:
-- Be warm, concise, and helpful
+- Be warm, concise, and helpful (light humor is okay: max 1 short witty line per answer)
+- Prioritize accuracy over creativity. If you are unsure, say so.
+- Never just repeat the user's message.
+- For timings/menus/rules, answer directly with exact times/items when available.
 - If you don't know something, say so and suggest contacting the warden or office
 - For urgent issues, suggest calling the warden's office
 - Format responses clearly, use bullet points for lists
@@ -994,9 +1002,10 @@ Guidelines:
       for (const rawLine of lines) {
         const line = rawLine.trim();
         if (!line) continue;
-        if (!line.startsWith('data:')) continue;
 
-        const payload = line.slice('data:'.length).trim();
+        const payload = line.startsWith('data:')
+          ? line.slice('data:'.length).trim()
+          : line;
         if (!payload || payload === '[DONE]') continue;
 
         try {
@@ -1013,15 +1022,46 @@ Guidelines:
           const nextTrimmed = next;
           if (!nextTrimmed) continue;
 
+          if (!emitted) {
+            yield nextTrimmed;
+            emitted = nextTrimmed;
+            continue;
+          }
+
           if (nextTrimmed.startsWith(emitted)) {
             const delta = nextTrimmed.slice(emitted.length);
             if (delta) yield delta;
-          } else {
-            yield nextTrimmed;
+            emitted = nextTrimmed;
+            continue;
           }
-          emitted = nextTrimmed;
+
+          // Some Gemini stream variants return already-delta text.
+          yield nextTrimmed;
+          emitted += nextTrimmed;
         } catch {
           // ignore malformed chunks
+        }
+      }
+    }
+
+    // Flush any remaining buffered content.
+    const tail = buffer.trim();
+    if (tail) {
+      const payload = tail.startsWith('data:') ? tail.slice('data:'.length).trim() : tail;
+      if (payload && payload !== '[DONE]') {
+        try {
+          const data = JSON.parse(payload) as {
+            candidates?: Array<{
+              content?: { parts?: Array<{ text?: string }> };
+            }>;
+          };
+          const next =
+            data.candidates?.[0]?.content?.parts
+              ?.map((p) => p.text || '')
+              .join('') || '';
+          if (next && next.trim().length) yield next.trim();
+        } catch {
+          // ignore
         }
       }
     }
@@ -1096,6 +1136,22 @@ function chunkText(text: string, chunkSize: number) {
     chunks.push(cleaned.slice(i, i + chunkSize));
   }
   return chunks;
+}
+
+function isGreeting(message: string) {
+  const lower = (message || '').trim().toLowerCase();
+  if (!lower) return false;
+  return (
+    lower === 'hi' ||
+    lower === 'hello' ||
+    lower === 'hey' ||
+    lower === 'hii' ||
+    lower === 'hlo' ||
+    lower === 'hola' ||
+    lower === 'good morning' ||
+    lower === 'good afternoon' ||
+    lower === 'good evening'
+  );
 }
 
 function getDefaultKnowledgeBaseEntries(): Array<{
