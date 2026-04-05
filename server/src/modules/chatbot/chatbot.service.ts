@@ -21,6 +21,7 @@ export class ChatbotService {
   constructor(private readonly prisma: PrismaService) {}
 
   private embeddingModelCache: string | null = null;
+  private chatModelCache: string | null = null;
 
   async chat(message: string, userId: string, history: ChatMessage[] = []) {
     const apiKey = process.env.GEMINI_API_KEY?.trim();
@@ -484,7 +485,7 @@ Guidelines:
     const baseUrl =
       process.env.GEMINI_API_BASE_URL?.trim() ||
       'https://generativelanguage.googleapis.com';
-    const model = process.env.GEMINI_CHAT_MODEL?.trim() || 'gemini-1.5-flash';
+    const preferredModel = process.env.GEMINI_CHAT_MODEL?.trim();
 
     const controller = new AbortController();
     const timeoutMs = 25_000;
@@ -509,22 +510,47 @@ Guidelines:
     ];
 
     try {
-      const res = await fetch(
-        `${baseUrl}/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents,
-            generationConfig: {
-              temperature: 0.4,
-              maxOutputTokens: 450,
-            },
-          }),
-          signal: controller.signal,
-        },
+      const initialModel = await this.resolveChatModel(
+        apiKey,
+        baseUrl,
+        preferredModel,
       );
+
+      let triedModels = new Set<string>();
+      let res = await this.generateWithModel(
+        apiKey,
+        baseUrl,
+        initialModel,
+        systemPrompt,
+        contents,
+        controller.signal,
+      );
+      triedModels.add(initialModel);
+
+      if (!res.ok && (res.status === 404 || res.status === 400)) {
+        // 404/400 here usually means the configured model isn't available for this API key
+        // (free tier often differs) or isn't supported for generateContent.
+        this.chatModelCache = null;
+        const candidates = await this.resolveChatModelCandidates(apiKey, baseUrl);
+
+        for (const model of candidates) {
+          if (triedModels.has(model)) continue;
+          res = await this.generateWithModel(
+            apiKey,
+            baseUrl,
+            model,
+            systemPrompt,
+            contents,
+            controller.signal,
+          );
+          triedModels.add(model);
+          if (res.ok) {
+            this.chatModelCache = model;
+            break;
+          }
+          if (!(res.status === 404 || res.status === 400)) break;
+        }
+      }
 
       if (!res.ok) {
         const text = await res.text().catch(() => '');
@@ -544,6 +570,115 @@ Guidelines:
           ?.map((p) => p.text || '')
           .join('') || '';
       return text.trim();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private async generateWithModel(
+    apiKey: string,
+    baseUrl: string,
+    model: string,
+    systemPrompt: string,
+    contents: unknown,
+    signal: AbortSignal,
+  ) {
+    return fetch(
+      `${baseUrl}/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents,
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 450,
+          },
+        }),
+        signal,
+      },
+    );
+  }
+
+  private async resolveChatModel(
+    apiKey: string,
+    baseUrl: string,
+    preferredModel?: string,
+  ): Promise<string> {
+    if (preferredModel) {
+      return preferredModel.replace(/^models\//, '');
+    }
+    if (this.chatModelCache) return this.chatModelCache;
+
+    const candidates = await this.resolveChatModelCandidates(apiKey, baseUrl);
+    const picked = candidates[0] || null;
+    if (!picked) {
+      throw new ServiceUnavailableException(
+        'No chat model available for this Gemini API key.',
+      );
+    }
+
+    this.chatModelCache = picked;
+    return picked;
+  }
+
+  private async resolveChatModelCandidates(
+    apiKey: string,
+    baseUrl: string,
+  ): Promise<string[]> {
+    const controller = new AbortController();
+    const timeoutMs = 10_000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(
+        `${baseUrl}/v1beta/models?key=${encodeURIComponent(apiKey)}`,
+        { method: 'GET', signal: controller.signal },
+      );
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new ServiceUnavailableException(
+          `Gemini ListModels failed (${res.status}): ${text || res.statusText}`,
+        );
+      }
+
+      const data = (await res.json()) as {
+        models?: Array<{
+          name?: string;
+          supportedGenerationMethods?: string[];
+        }>;
+      };
+
+      const raw =
+        data.models
+          ?.filter((m) =>
+            (m.supportedGenerationMethods || []).includes('generateContent'),
+          )
+          .map((m) => (m.name || '').replace(/^models\//, ''))
+          .filter(Boolean) || [];
+
+      // Prefer stable ids when a "-latest" alias exists.
+      const all = new Set<string>();
+      for (const name of raw) {
+        all.add(name);
+        if (name.toLowerCase().endsWith('-latest')) {
+          all.add(name.slice(0, -'-latest'.length));
+        }
+      }
+
+      const normalized = Array.from(all).filter(Boolean);
+      const rank = (name: string) => {
+        const lower = name.toLowerCase();
+        const isGemini = lower.includes('gemini') ? 1 : 0;
+        const isFlash = lower.includes('flash') ? 1 : 0;
+        const isLatest = lower.endsWith('-latest') ? 1 : 0;
+        // Higher is better; penalize "-latest" to prefer stable ids.
+        return isGemini * 100 + isFlash * 10 - isLatest;
+      };
+
+      return normalized.sort((a, b) => rank(b) - rank(a));
     } finally {
       clearTimeout(timer);
     }
