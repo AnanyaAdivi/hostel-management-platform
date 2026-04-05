@@ -101,6 +101,7 @@ export default function Sidebar({
           <NavLink
             key={to}
             to={to}
+            end={to === '/complaints'}
             onClick={() => {
               if (isMobile) onCloseMobile?.()
             }}
