@@ -119,7 +119,7 @@ export default function TrackComplaintPage() {
 
         {trackQuery.data ? (
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, padding: '0 4px' }}>
               <div>
                 <div style={{ fontFamily: 'Sora', fontSize: 20 }}>{trackQuery.data.title}</div>
                 <div style={{ color: 'var(--text-tertiary)', marginTop: 4 }}>
@@ -130,7 +130,7 @@ export default function TrackComplaintPage() {
               <StatusBadge status={trackQuery.data.status} />
             </div>
 
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14, padding: '0 4px' }}>
               <button
                 onClick={async () => {
                   const ok = await copyToClipboard(trackQuery.data!.token)
@@ -176,7 +176,7 @@ export default function TrackComplaintPage() {
               </button>
             </div>
             {trackQuery.data.description ? (
-              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 16 }}>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 16, wordBreak: 'break-word' }}>
                 {trackQuery.data.description}
               </p>
             ) : null}

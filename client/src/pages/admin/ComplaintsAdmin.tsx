@@ -108,7 +108,7 @@ export default function ComplaintsAdmin() {
                 }}
               />
               
-              <div style={{ position: 'relative', zIndex: 1 }}>
+              <div style={{ position: 'relative', zIndex: 1, padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: 'Sora', fontSize: 19, fontWeight: 700, letterSpacing: '-0.3px' }}>
@@ -133,7 +133,7 @@ export default function ComplaintsAdmin() {
                   <StatusBadge status={complaint.status} />
                 </div>
 
-                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 12, marginBottom: 12, fontSize: 14 }}>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginTop: 12, marginBottom: 12, fontSize: 14, wordBreak: 'break-word' }}>
                   {complaint.description}
                 </p>
 
