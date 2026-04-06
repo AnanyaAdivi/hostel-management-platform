@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import {
   Area,
   AreaChart,
@@ -43,6 +44,7 @@ const categoryData = [
 
 export default function AdminDashboard() {
   const isMobile = useMediaQuery('(max-width: 900px)')
+  const navigate = useNavigate()
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: () => api.get('/dashboard/admin-stats').then((r) => r.data as AdminDashboardStats),
@@ -99,6 +101,85 @@ export default function AdminDashboard() {
           },
         ]}
       />
+
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr 1fr', gap: 12 }}>
+        <button
+          onClick={() => navigate('/admin/student-management')}
+          style={{
+            padding: '16px 12px',
+            textAlign: 'center',
+            borderRadius: 12,
+            border: 'none',
+            background: 'linear-gradient(135deg, rgba(108,99,255,0.12), rgba(108,99,255,0.08))',
+            cursor: 'pointer',
+            color: 'var(--accent-primary)',
+            fontSize: 13,
+            fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(108,99,255,0.18)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(108,99,255,0.12), rgba(108,99,255,0.08))')}
+        >
+          👥<br />Manage Students
+        </button>
+        <button
+          onClick={() => navigate('/admin/room-management')}
+          style={{
+            padding: '16px 12px',
+            textAlign: 'center',
+            borderRadius: 12,
+            border: 'none',
+            background: 'linear-gradient(135deg, rgba(34,211,238,0.12), rgba(34,211,238,0.08))',
+            cursor: 'pointer',
+            color: '#22D3EE',
+            fontSize: 13,
+            fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(34,211,238,0.18)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(34,211,238,0.12), rgba(34,211,238,0.08))')}
+        >
+          🏠<br />Rooms
+        </button>
+        <button
+          onClick={() => navigate('/admin/complaints')}
+          style={{
+            padding: '16px 12px',
+            textAlign: 'center',
+            borderRadius: 12,
+            border: 'none',
+            background: 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.08))',
+            cursor: 'pointer',
+            color: '#EF4444',
+            fontSize: 13,
+            fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.18)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.08))')}
+        >
+          📋<br />Complaints
+        </button>
+        <button
+          onClick={() => navigate('/admin/maintenance')}
+          style={{
+            padding: '16px 12px',
+            textAlign: 'center',
+            borderRadius: 12,
+            border: 'none',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.08))',
+            cursor: 'pointer',
+            color: '#F59E0B',
+            fontSize: 13,
+            fontWeight: 600,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(245,158,11,0.18)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.08))')}
+        >
+          🔧<br />Maintenance
+        </button>
+      </div>
 
       <div
         style={{

@@ -75,10 +75,10 @@ export default function MaintenanceAdmin() {
         </p>
       </div>
 
-      <div className="card" style={{ display: 'grid', gap: 12 }}>
+      <div className="card" style={{ display: 'grid', gap: 14, background: 'linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.03))', border: '1px solid rgba(245,158,11,0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Wrench size={18} color="var(--accent-warning)" />
-          <h3 style={{ fontFamily: 'Sora', fontSize: 16, margin: 0 }}>
+          <div style={{ fontSize: 24 }}>🔧</div>
+          <h3 style={{ fontFamily: 'Sora', fontSize: 16, fontWeight: 700, margin: 0, letterSpacing: '-0.2px' }}>
             New maintenance request
           </h3>
         </div>
@@ -89,35 +89,41 @@ export default function MaintenanceAdmin() {
           style={{
             background: 'var(--bg-tertiary)',
             border: '1px solid var(--border-default)',
-            borderRadius: 8,
-            padding: '10px 12px',
+            borderRadius: 10,
+            padding: '12px 14px',
             color: 'var(--text-primary)',
+            fontSize: 14,
+            fontFamily: 'DM Sans',
           }}
         />
         <textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="Describe the maintenance issue"
+          placeholder="Describe the maintenance issue in detail"
           rows={4}
           style={{
             background: 'var(--bg-tertiary)',
             border: '1px solid var(--border-default)',
-            borderRadius: 8,
-            padding: '10px 12px',
+            borderRadius: 10,
+            padding: '12px 14px',
             color: 'var(--text-primary)',
+            fontSize: 14,
+            fontFamily: 'DM Sans',
             resize: 'vertical',
           }}
         />
         <input
           value={location}
           onChange={(event) => setLocation(event.target.value)}
-          placeholder="Location"
+          placeholder="Location (e.g., Block A, Room 101)"
           style={{
             background: 'var(--bg-tertiary)',
             border: '1px solid var(--border-default)',
-            borderRadius: 8,
-            padding: '10px 12px',
+            borderRadius: 10,
+            padding: '12px 14px',
             color: 'var(--text-primary)',
+            fontSize: 14,
+            fontFamily: 'DM Sans',
           }}
         />
         <button
@@ -126,8 +132,9 @@ export default function MaintenanceAdmin() {
           disabled={
             createTask.isPending || !title.trim() || !description.trim() || !location.trim()
           }
+          style={{ padding: '12px 20px' }}
         >
-          {createTask.isPending ? 'Submitting...' : 'Submit maintenance request'}
+          {createTask.isPending ? '⏳ Submitting...' : '✓ Submit request'}
         </button>
       </div>
 

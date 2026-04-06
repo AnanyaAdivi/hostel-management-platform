@@ -249,14 +249,17 @@ export default function StudentManagement() {
               background: 'var(--bg-tertiary)',
               border: '1px solid var(--border-default)',
               color: 'var(--text-primary)',
-              borderRadius: 8,
-              padding: '10px 12px',
+              borderRadius: 10,
+              padding: '10px 14px',
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
             }}
           >
-            <option value="course">Sort by course</option>
-            <option value="sports">Sort by sports</option>
-            <option value="career">Sort by career goal</option>
-            <option value="approval">Sort by approval</option>
+            <option value="course">📚 Course</option>
+            <option value="sports">⚽ Sports</option>
+            <option value="career">🎯 Career goal</option>
+            <option value="approval">✓ Approval</option>
           </select>
         </div>
       </div>
@@ -323,8 +326,11 @@ export default function StudentManagement() {
             ))}
 
             {!pendingQuery.isFetching && !approvedQuery.isFetching && filteredStudents.length === 0 ? (
-              <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                No students found.
+              <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
+                <div style={{ fontSize: 13 }}>
+                  {studentSearch ? 'No students match your search' : `No ${view} students yet`}
+                </div>
               </div>
             ) : null}
           </div>

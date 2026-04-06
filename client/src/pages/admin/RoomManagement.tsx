@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { BedDouble } from 'lucide-react'
+import { BedDouble, Search } from 'lucide-react'
 import api from '@/services/api'
 import LoadingSpinner from '@/components/shared/LoadingSpinner'
 import StatusBadge from '@/components/shared/StatusBadge'
@@ -18,22 +18,53 @@ type Room = {
 
 export default function RoomManagement() {
   const [filter, setFilter] = useState('')
+  const [search, setSearch] = useState('')
   const roomsQuery = useQuery({
     queryKey: ['room-management', filter],
     queryFn: () =>
       api.get('/rooms', { params: filter ? { status: filter } : undefined }).then((res) => res.data as Room[]),
   })
 
+  const filteredRooms = useMemo(() => {
+    if (!search.trim()) return roomsQuery.data || []
+    const q = search.toLowerCase()
+    return (roomsQuery.data || []).filter(
+      (room) =>
+        room.number.toLowerCase().includes(q) ||
+        room.block.toLowerCase().includes(q) ||
+        room.allocations.some((a) => a.user.name.toLowerCase().includes(q))
+    )
+  }, [search, roomsQuery.data])
+
   if (roomsQuery.isLoading) return <LoadingSpinner />
 
   return (
     <div style={{ display: 'grid', gap: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ fontFamily: 'Sora', fontSize: 24, margin: 0 }}>Room Management</h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: 4 }}>
-            Inspect occupancy, amenities, and resident assignments.
-          </p>
+      <div>
+        <h1 style={{ fontFamily: 'Sora', fontSize: 24, margin: 0, letterSpacing: '-0.5px' }}>🏠 Room Management</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: 4 }}>
+          Inspect occupancy, amenities, and resident assignments.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr', alignItems: 'center' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by room, block, or occupant..."
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-primary)',
+              borderRadius: 10,
+              padding: '12px 14px 12px 40px',
+              fontSize: 14,
+            }}
+          />
         </div>
         <select
           value={filter}
@@ -42,20 +73,35 @@ export default function RoomManagement() {
             background: 'var(--bg-tertiary)',
             border: '1px solid var(--border-default)',
             color: 'var(--text-primary)',
-            borderRadius: 8,
-            padding: '10px 12px',
+            borderRadius: 10,
+            padding: '12px 14px',
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: 'pointer',
           }}
         >
-          <option value="">All statuses</option>
-          <option value="AVAILABLE">Available</option>
-          <option value="OCCUPIED">Occupied</option>
-          <option value="MAINTENANCE">Maintenance</option>
-          <option value="RESERVED">Reserved</option>
+          <option value="">📊 All statuses</option>
+          <option value="AVAILABLE">✅ Available</option>
+          <option value="OCCUPIED">👥 Occupied</option>
+          <option value="MAINTENANCE">🔧 Maintenance</option>
+          <option value="RESERVED">🔒 Reserved</option>
         </select>
       </div>
 
-      <div style={{ display: 'grid', gap: 14 }}>
-        {(roomsQuery.data || []).map((room) => (
+      {filteredRooms.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 24px',
+          background: 'rgba(108,99,255,0.05)',
+          borderRadius: 14,
+          border: '1px dashed var(--border-default)',
+        }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+          <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{search ? 'No rooms match your search' : 'No rooms found'}</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 14 }}>
+          {filteredRooms.map((room) => (
           <div key={room.id} className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -97,14 +143,15 @@ export default function RoomManagement() {
               ))}
             </div>
             <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-              Occupants:{' '}
+              👥 Occupants:{' '}
               {room.allocations.length
                 ? room.allocations.map((item) => item.user.name).join(', ')
-                : 'No active occupants'}
+                : '—'}
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
