@@ -36,9 +36,10 @@ export default function Header() {
         top: 0,
         zIndex: 30,
         backdropFilter: 'blur(14px)',
-        background: 'rgba(10,15,30,0.75)',
+        background: 'linear-gradient(180deg, rgba(10,15,30,0.85), rgba(10,15,30,0.75))',
         borderBottom: '1px solid var(--border-default)',
         padding: isMobile ? '0.9rem 1rem' : '1rem 2rem',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       }}
     >
       <div

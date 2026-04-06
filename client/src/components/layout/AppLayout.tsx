@@ -18,7 +18,7 @@ export default function AppLayout() {
       style={{
         display: 'flex',
         minHeight: '100vh',
-        background: 'radial-gradient(circle at top left, rgba(108,99,255,0.08), transparent 25%), var(--bg-primary)',
+        background: 'radial-gradient(circle at top left, rgba(108,99,255,0.06), transparent 40%), radial-gradient(circle at bottom right, rgba(34,211,238,0.04), transparent 60%), var(--bg-primary)',
       }}
     >
       <Sidebar

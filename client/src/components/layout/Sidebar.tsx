@@ -36,11 +36,12 @@ export default function Sidebar({
         top: 0,
         height: '100vh',
         zIndex: 50,
-        background: 'linear-gradient(180deg, rgba(17,24,39,0.96), rgba(10,15,30,0.98))',
+        background: 'linear-gradient(180deg, rgba(11,15,30,0.98), rgba(10,15,30,0.99))',
         borderRight: '1px solid var(--border-default)',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        backdropFilter: 'blur(8px)',
       }}
     >
       <div

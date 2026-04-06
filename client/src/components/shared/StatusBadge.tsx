@@ -58,14 +58,18 @@ export default function StatusBadge({ status }: { status: string }) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 5,
-        padding: '3px 10px',
-        borderRadius: 20,
+        gap: 6,
+        padding: '6px 12px',
+        borderRadius: 8,
         background: c.bg,
         color: c.color,
-        fontSize: 12,
-        fontWeight: 500,
+        fontSize: 13,
+        fontWeight: 600,
         whiteSpace: 'nowrap',
+        border: `1px solid ${c.color}22`,
+        backdropFilter: 'blur(4px)',
+        transition: 'all 0.2s',
+        fontFamily: 'DM Sans',
       }}
     >
       <span
