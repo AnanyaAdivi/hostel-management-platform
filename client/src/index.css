@@ -181,4 +181,25 @@ h4 { font-size: 1.25rem; line-height: 1.4; }
 .btn-secondary:hover {
   background: rgba(255,255,255,0.12);
   border-color: var(--border-hover);
-}\n\n/* Animation Keyframes */\n@keyframes pulse-slide {\n  0% { transform: translateX(-100%); }\n  100% { transform: translateX(200%); }\n}\n\n@keyframes fadeIn {\n  from { opacity: 0; }\n  to { opacity: 1; }\n}\n\n@keyframes slideUp {\n  from { opacity: 0; transform: translateY(10px); }\n  to { opacity: 1; transform: translateY(0); }\n}\n\n@keyframes glow {\n  0%, 100% { box-shadow: 0 0 20px rgba(108,99,255,0.15); }\n  50% { box-shadow: 0 0 30px rgba(108,99,255,0.25); }\n}
+}
+
+/* Animation Keyframes */
+@keyframes pulse-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(108,99,255,0.15); }
+  50% { box-shadow: 0 0 30px rgba(108,99,255,0.25); }
+}
