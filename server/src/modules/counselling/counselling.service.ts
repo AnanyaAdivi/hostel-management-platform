@@ -13,11 +13,31 @@ export class CounsellingService {
   constructor(private prisma: PrismaService) {}
 
   async createSession(studentId: string, dto: CreateSessionDto) {
-    // Get first counsellor (in production, implement counsellor assignment logic)
-    const counsellor = await this.prisma.counsellorProfile.findFirst();
+    // Get first counsellor, or create one if none exists
+    let counsellor = await this.prisma.counsellorProfile.findFirst();
 
     if (!counsellor) {
-      throw new NotFoundException('No counsellor available');
+      // Try to get or create a counsellor user
+      const counsellorUser = await this.prisma.user.findUnique({
+        where: { email: 'counsellor@sau.ac.in' },
+      });
+
+      if (!counsellorUser) {
+        throw new NotFoundException(
+          'No counsellor available. Please contact administration.',
+        );
+      }
+
+      // Create counsellor profile if it doesn't exist
+      counsellor = await this.prisma.counsellorProfile.create({
+        data: {
+          userId: counsellorUser.id,
+          bio: 'Hostel Student Counsellor',
+          specialties: ['General Counselling'],
+          availability: '9:00 AM – 5:00 PM',
+          isOnline: true,
+        },
+      });
     }
 
     return this.prisma.counsellingSession.create({

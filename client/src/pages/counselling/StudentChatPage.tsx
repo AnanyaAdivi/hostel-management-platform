@@ -59,10 +59,14 @@ export function StudentChatPage() {
       setError(null);
       setIsCreatingSession(true);
       
+      console.log('[Counselling] Creating session with mood:', mood, 'topic:', topic);
+      
       const newSession = await createSessionMutation.mutateAsync({
         mood,
         topic: topic || undefined,
       });
+      
+      console.log('[Counselling] Session created:', newSession);
       
       if (!newSession || !newSession.id) {
         throw new Error('Failed to create session - no session ID returned');
@@ -70,10 +74,25 @@ export function StudentChatPage() {
       
       setActiveSessionId(newSession.id);
       setShowMoodSelector(false);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create session. Please try again.';
+    } catch (err: any) {
+      console.error('[Counselling] Session creation error:', err);
+      
+      let errorMessage = 'Failed to create session. Please try again.';
+      
+      // Extract error details from different sources
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.status === 401) {
+        errorMessage = 'You are not authenticated. Please log in again.';
+      } else if (err.response?.status === 403) {
+        errorMessage = 'You do not have permission to create a session.';
+      } else if (err.response?.status === 404) {
+        errorMessage = 'No counsellor available. Please try again later.';
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
-      console.error('Session creation error:', err);
     } finally {
       setIsCreatingSession(false);
     }
