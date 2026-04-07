@@ -5,6 +5,7 @@ import {
   BedDouble,
   CalendarDays,
   EyeOff,
+  Heart,
   Home,
   LayoutDashboard,
   Search,
@@ -19,6 +20,7 @@ const studentNav: NavItem[] = [
   { to: '/my-room', icon: Home, label: 'My Room' },
   { to: '/complaints', icon: AlertCircle, label: 'My Complaints' },
   { to: '/complaints/anonymous', icon: EyeOff, label: 'Report Anonymously' },
+  { to: '/counselling', icon: Heart, label: 'Talk to Counsellor' },
   { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
   { to: '/track', icon: Search, label: 'Track Complaint' },
 ]
@@ -41,8 +43,15 @@ const wardenNav: NavItem[] = [
   { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
 ]
 
+const counsellorNav: NavItem[] = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/counsellor/dashboard', icon: Heart, label: 'My Sessions' },
+  { to: '/maintenance', icon: Wrench, label: 'Maintenance' },
+]
+
 export function getNavItems(role: Role | undefined): NavItem[] {
   if (role === 'ADMIN') return adminNav
   if (role === 'WARDEN') return wardenNav
+  if (role === 'COUNSELLOR') return counsellorNav
   return studentNav
 }
