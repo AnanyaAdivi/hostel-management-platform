@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, MessageCircle, Clock, X } from 'lucide-react';
+import { Send, MessageCircle, Clock, X, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import {
   useCounsellingSession,
@@ -20,6 +20,8 @@ export function StudentChatPage() {
   const [messages, setMessages] = useState<CounsellingMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: session } = useCounsellingSession(activeSessionId);
@@ -53,29 +55,75 @@ export function StudentChatPage() {
   }, [messages]);
 
   const handleCreateSession = async (mood: Mood, topic: string) => {
-    const newSession = await createSessionMutation.mutateAsync({
-      mood,
-      topic: topic || undefined,
-    });
-    setActiveSessionId(newSession.id);
-    setShowMoodSelector(false);
+    try {
+      setError(null);
+      setIsCreatingSession(true);
+      
+      const newSession = await createSessionMutation.mutateAsync({
+        mood,
+        topic: topic || undefined,
+      });
+      
+      if (!newSession || !newSession.id) {
+        throw new Error('Failed to create session - no session ID returned');
+      }
+      
+      setActiveSessionId(newSession.id);
+      setShowMoodSelector(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create session. Please try again.';
+      setError(errorMessage);
+      console.error('Session creation error:', err);
+    } finally {
+      setIsCreatingSession(false);
+    }
   };
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !activeSessionId) return;
 
-    await sendMessageMutation.mutateAsync({
-      sessionId: activeSessionId,
-      data: { content: inputText, type: 'TEXT' },
-    });
+    try {
+      await sendMessageMutation.mutateAsync({
+        sessionId: activeSessionId,
+        data: { content: inputText, type: 'TEXT' },
+      });
 
-    setInputText('');
+      setInputText('');
+    } catch (err) {
+      console.error('Message send error:', err);
+    }
   };
 
   if (!activeSessionId) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 to-blue-50">
-        <AnimatePresence>{showMoodSelector && <MoodSelector onSelect={handleCreateSession} />}</AnimatePresence>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-teal-50 to-blue-50 p-4">
+        <AnimatePresence>
+          {showMoodSelector && (
+            <MoodSelector 
+              onSelect={handleCreateSession}
+              isLoading={isCreatingSession}
+            />
+          )}
+        </AnimatePresence>
+
+        {error && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 max-w-md"
+          >
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-red-800 text-sm font-medium">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <MessageCircle className="w-16 h-16 mx-auto mb-4 text-teal-500" />
@@ -85,10 +133,14 @@ export function StudentChatPage() {
           </p>
 
           <button
-            onClick={() => setShowMoodSelector(true)}
-            className="bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 px-8 rounded-full transition-all"
+            onClick={() => {
+              setError(null);
+              setShowMoodSelector(true);
+            }}
+            disabled={isCreatingSession}
+            className="bg-teal-500 hover:bg-teal-600 disabled:bg-teal-400 text-white font-semibold py-3 px-8 rounded-full transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Start a Session
+            {isCreatingSession ? 'Creating Session...' : 'Start a Session'}
           </button>
 
           {sessions && sessions.length > 0 && (
@@ -98,7 +150,10 @@ export function StudentChatPage() {
                 {sessions.map((sess: any) => (
                   <motion.button
                     key={sess.id}
-                    onClick={() => setActiveSessionId(sess.id)}
+                    onClick={() => {
+                      setError(null);
+                      setActiveSessionId(sess.id);
+                    }}
                     className="w-full p-4 bg-white rounded-lg hover:shadow-md transition-all text-left"
                   >
                     <p className="font-medium text-gray-800">{sess.topic || 'Untitled'}</p>
