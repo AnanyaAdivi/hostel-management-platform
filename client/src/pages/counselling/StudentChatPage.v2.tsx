@@ -10,7 +10,6 @@ import {
   Loader,
   Heart,
   Phone,
-  Volume2,
   Award,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
