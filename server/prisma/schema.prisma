@@ -290,8 +290,6 @@ model CounsellorProfile {
   specialties   String[]
   availability  String?
   isOnline      Boolean  @default(false)
-  lastSeenAt    DateTime @default(now())
-  currentStatus String   @default("available")
   sessions      CounsellingSession[]
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

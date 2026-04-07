@@ -230,8 +230,6 @@ export class CounsellingService {
       where: { userId },
       data: {
         isOnline,
-        lastSeenAt: new Date(),
-        currentStatus: isOnline ? 'available' : 'offline',
       },
     });
   }
@@ -241,9 +239,7 @@ export class CounsellingService {
     return this.prisma.counsellorProfile.update({
       where: { userId },
       data: {
-        currentStatus: status,
         isOnline,
-        lastSeenAt: new Date(),
       },
     });
   }

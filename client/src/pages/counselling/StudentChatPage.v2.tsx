@@ -26,8 +26,6 @@ import type { CounsellingMessage, Mood } from '../../types';
 
 interface CounsellorProfileData {
   isOnline: boolean;
-  currentStatus?: string;
-  lastSeenAt?: string;
   user?: { name: string; avatarUrl?: string };
   bio?: string;
   specialties?: string[];
@@ -141,19 +139,6 @@ export function StudentChatPageV2() {
       hour: '2-digit',
       minute: '2-digit',
     });
-  };
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'available':
-        return 'bg-emerald-500';
-      case 'busy':
-        return 'bg-amber-500';
-      case 'away':
-        return 'bg-slate-400';
-      default:
-        return 'bg-slate-300';
-    }
   };
 
   // No active session - welcome screen
@@ -294,7 +279,7 @@ export function StudentChatPageV2() {
                 {counsellorProfile?.user?.name?.charAt(0) || 'C'}
               </div>
               <div
-                className={`absolute bottom-0 right-0 w-4 h-4 ${getStatusColor(counsellorProfile?.currentStatus)} rounded-full border-2 border-white`}
+                className={`absolute bottom-0 right-0 w-4 h-4 ${counsellorIsOnline ? 'bg-emerald-500' : 'bg-slate-300'} rounded-full border-2 border-white`}
               />
             </div>
 
