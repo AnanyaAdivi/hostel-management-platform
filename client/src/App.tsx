@@ -91,6 +91,8 @@ export default function App() {
                     <AdminDashboard />
                   ) : user?.role === 'WARDEN' ? (
                     <WardenDashboard />
+                  ) : user?.role === 'COUNSELLOR' ? (
+                    <CounsellorDashboard />
                   ) : (
                     <StudentDashboard />
                   )
