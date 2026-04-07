@@ -23,45 +23,50 @@ export function MoodSelector({ onSelect, isLoading }: MoodSelectorProps) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
     >
       <motion.div
         initial={{ scale: 0.9, y: 20 }}
         animate={{ scale: 1, y: 0 }}
-        className="bg-white rounded-2xl p-8 max-w-md w-full mx-4"
+        className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full"
       >
-        <h2 className="text-2xl font-bold text-center mb-2 text-gray-800">How are you feeling?</h2>
-        <p className="text-center text-gray-500 mb-6">Select your current mood</p>
+        <h2 className="text-3xl font-bold text-center mb-1 text-gray-900">How are you feeling?</h2>
+        <p className="text-center text-gray-600 mb-8 text-sm">Select your current mood</p>
 
-        <div className="grid grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-5 gap-3 mb-8">
           {moods.map((mood) => (
             <motion.button
               key={mood.value}
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setSelectedMood(mood.value)}
-              className={`flex flex-col items-center justify-center p-3 rounded-lg transition-all ${
+              className={`flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200 ${
                 selectedMood === mood.value
-                  ? 'bg-teal-100 ring-2 ring-teal-500'
+                  ? 'bg-teal-500 ring-2 ring-teal-600 shadow-md'
                   : 'bg-gray-100 hover:bg-gray-200'
               }`}
             >
-              <span className="text-3xl mb-1">{mood.emoji}</span>
-              <span className="text-xs text-center font-medium text-gray-700">{mood.label}</span>
+              <span className="text-4xl mb-2">{mood.emoji}</span>
+              <span className={`text-xs text-center font-semibold ${
+                selectedMood === mood.value ? 'text-white' : 'text-gray-800'
+              }`}>
+                {mood.label}
+              </span>
             </motion.button>
           ))}
         </div>
 
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            What would you like to talk about? (optional)
+        <div className="mb-8">
+          <label className="block text-sm font-semibold text-gray-900 mb-3">
+            What would you like to talk about? <span className="text-gray-500 font-normal">(optional)</span>
           </label>
           <input
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g., Homesickness, Academic pressure..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+            placeholder="e.g., Homesickness, Academic pressure, Family issues..."
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-200 transition-all text-gray-900 placeholder-gray-500"
+            spellCheck="false"
           />
         </div>
 
@@ -70,9 +75,16 @@ export function MoodSelector({ onSelect, isLoading }: MoodSelectorProps) {
           whileTap={{ scale: 0.98 }}
           onClick={() => selectedMood && onSelect(selectedMood, topic)}
           disabled={!selectedMood || isLoading}
-          className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-teal-500 hover:bg-teal-600 disabled:bg-teal-400 text-white font-bold py-3 rounded-full transition-all disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
         >
-          {isLoading ? 'Starting...' : 'Start Session'}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Starting Session...
+            </span>
+          ) : (
+            'Start Session'
+          )}
         </motion.button>
       </motion.div>
     </motion.div>
